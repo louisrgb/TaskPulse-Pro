@@ -9,55 +9,48 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
   <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #f8fafc;
-      margin: 0;
-    }
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; margin: 0; }
     #fallback-error {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: white;
-      z-index: 9999;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem;
-      text-align: center;
+      display: none; position: fixed; inset: 0; background: white; z-index: 9999;
+      flex-direction: column; align-items: center; justify-content: center;
+      padding: 2rem; text-align: center;
     }
   </style>
-<script type="importmap">
+
+  <script type="importmap">
 {
   "imports": {
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "@google/genai": "https://esm.sh/@google/genai@^1.37.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.48.1"
+    "react": "https://esm.sh/react@19.2.3",
+    "react-dom": "https://esm.sh/react-dom@19.2.3",
+    "react-dom/client": "https://esm.sh/react-dom@19.2.3/client",
+    "htm": "https://esm.sh/htm@3.1.1",
+    "@google/genai": "https://esm.sh/@google/genai@1.37.0",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.48.1",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
   }
 }
 </script>
+  <script async src="https://esm.sh/es-module-shims@1.10.0"></script>
 </head>
 <body>
   <div id="root"></div>
   
   <div id="fallback-error">
-    <h2 style="color: #ef4444; font-weight: bold; font-size: 1.5rem; margin-bottom: 1rem;">Oeps! De app start niet.</h2>
-    <p style="color: #64748b; max-width: 400px;">Dit komt meestal doordat GitHub Pages de .tsx bestanden niet goed kan laden. Zorg ervoor dat je de bestanden via een 'build' proces publiceert of gebruik een browser die ES-modules volledig ondersteunt.</p>
-    <button onclick="window.location.reload()" style="margin-top: 1.5rem; background: #6366f1; color: white; padding: 0.75rem 1.5rem; border-radius: 0.75rem; border: none; font-weight: bold; cursor: pointer;">Probeer Opnieuw</button>
+    <h2 style="color: #ef4444; font-weight: bold; font-size: 1.5rem; margin-bottom: 1rem;">Laden mislukt</h2>
+    <p style="color: #64748b; max-width: 400px;">De browser blokkeert mogelijk het laden van scripts of de bestanden zijn niet gevonden. Controleer de console (F12).</p>
+    <button onclick="window.location.reload()" style="margin-top: 1.5rem; background: #6366f1; color: white; padding: 0.75rem 1.5rem; border-radius: 0.75rem; border: none; font-weight: bold; cursor: pointer;">Opnieuw proberen</button>
   </div>
 
-  <script type="module">
-    // Fail-safe check
+  <script type="module" src="./index.js"></script>
+
+  <script>
     setTimeout(() => {
-      const root = document.getElementById('root');
-      if (root && root.innerHTML === '') {
+      if (!document.getElementById('root').innerHTML) {
         document.getElementById('fallback-error').style.display = 'flex';
       }
     }, 6000);
   </script>
-  <script type="module" src="./index.tsx"></script>
 </body>
 </html>

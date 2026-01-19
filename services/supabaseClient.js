@@ -2,19 +2,14 @@
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 'https://cjojacrssrdfbkcyfylf.supabase.co';
-// LET OP: De onderstaande sleutel lijkt een Stripe sleutel (sb_publishable...) te zijn.
-// Een echte Supabase sleutel begint met 'eyJ...'. 
-// We bouwen een 'mock' client als de sleutel niet klopt zodat de app niet crasht.
 const supabaseAnonKey = 'sb_publishable_88cjnINq-BALRhd66sdDwA_2UFDr_jj'; 
 
-let client: any;
-
-const isSupabaseKey = (key: string) => key && key.startsWith('eyJ');
+let client;
+const isSupabaseKey = (key) => key && key.startsWith('eyJ');
 
 if (!isSupabaseKey(supabaseAnonKey)) {
-  console.warn("SYSTEEM: Geen geldige Supabase sleutel gevonden. App draait in LOKALE DEMO MODUS.");
   client = {
-    from: (table: string) => ({
+    from: () => ({
       select: () => Promise.resolve({ data: [], error: null }),
       insert: () => Promise.resolve({ data: null, error: null }),
       update: () => ({ eq: () => Promise.resolve({ error: null }) }),
@@ -25,8 +20,6 @@ if (!isSupabaseKey(supabaseAnonKey)) {
   try {
     client = createClient(supabaseUrl, supabaseAnonKey);
   } catch (e) {
-    console.error("Supabase Init Error:", e);
-    // Fallback naar mock client bij crash
     client = { from: () => ({ select: () => Promise.resolve({ data: [] }) }) };
   }
 }
