@@ -43,7 +43,7 @@ const LoginView = ({ onLogin }) => {
             <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Wachtwoord</label>
             <input type="password" placeholder="••••••••" className="w-full px-8 py-5 rounded-[2rem] border border-slate-100 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-indigo-50 outline-none transition-all" value=${password} onInput=${e => setPassword(e.target.value)} required />
           </div>
-          ${error && html`<p className="text-red-500 text-xs font-bold text-center bg-red-50 py-3 rounded-2xl">Ongeldige inloggegevens.</p>`}
+          ${error && html`<p className="text-red-500 text-xs font-bold text-center bg-red-50 py-3 rounded-2xl">Ongeldige login.</p>`}
           <button type="submit" className="w-full bg-indigo-600 text-white font-black py-5 rounded-[2rem] shadow-xl shadow-indigo-100 hover:bg-indigo-700 active:scale-[0.98] transition-all text-lg mt-4">Inloggen</button>
         </form>
       </div>
@@ -83,7 +83,7 @@ const UserManagement = ({ users, onAddUser, onUpdateUser, onDeleteUser }) => {
       <div className="flex flex-col md:flex-row md:items-center justify-between bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 gap-6">
         <div>
           <h3 className="text-2xl font-black text-slate-800 tracking-tight">Teamleden</h3>
-          <p className="text-slate-400 text-sm font-medium">Beheer gebruikersprofielen en rollen.</p>
+          <p className="text-slate-400 text-sm font-medium">Beheer gebruikers en profielen.</p>
         </div>
         <button onClick=${openAddModal} className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black shadow-lg shadow-emerald-100 hover:bg-emerald-600 active:scale-95 transition-all flex items-center justify-center gap-3">
           <${ICONS.Plus} className="w-6 h-6" /> Gebruiker Toevoegen
@@ -124,7 +124,7 @@ const UserManagement = ({ users, onAddUser, onUpdateUser, onDeleteUser }) => {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[999] flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl p-10 animate-in zoom-in duration-200">
             <div className="flex items-center justify-between mb-8">
-              <h3 className="text-2xl font-black text-slate-800">${editingUser ? 'Account Aanpassen' : 'Nieuw Account'}</h3>
+              <h3 className="text-2xl font-black text-slate-800">${editingUser ? 'Aanpassen' : 'Nieuw Lid'}</h3>
               <button onClick=${() => setIsModalOpen(false)} className="p-3 bg-slate-50 text-slate-400 hover:text-slate-600 rounded-full transition-all"><${ICONS.XMark} className="w-6 h-6"/></button>
             </div>
             <form onSubmit=${handleSubmit} className="space-y-4">
@@ -152,7 +152,7 @@ const UserManagement = ({ users, onAddUser, onUpdateUser, onDeleteUser }) => {
                 </select>
               </div>
               <button type="submit" className="w-full bg-indigo-600 text-white font-black py-5 rounded-[2rem] shadow-xl shadow-indigo-100 mt-6 hover:bg-indigo-700 active:scale-95 transition-all">
-                ${editingUser ? 'Opslaan & Sync' : 'Toevoegen'}
+                Opslaan & Sync
               </button>
             </form>
           </div>
@@ -178,8 +178,8 @@ const AdminDashboard = ({ tasks, users, onAddTask, onDeleteTask, onAddUser, onUp
         <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
           <div className="flex items-center justify-between bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
             <div>
-              <h2 className="text-2xl font-black text-slate-800 tracking-tight">Alle Taken</h2>
-              <p className="text-slate-400 text-sm font-medium">Beheer het teamoverzicht.</p>
+              <h2 className="text-2xl font-black text-slate-800 tracking-tight">Team Overzicht</h2>
+              <p className="text-slate-400 text-sm font-medium">Beheer alle actieve taken.</p>
             </div>
             <button onClick=${() => setIsAddingTask(true)} className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center gap-3">
               <${ICONS.Plus} className="w-6 h-6" /> Taak Toevoegen
@@ -190,7 +190,7 @@ const AdminDashboard = ({ tasks, users, onAddTask, onDeleteTask, onAddUser, onUp
             <table className="w-full text-left">
               <thead className="bg-slate-50 border-b border-slate-100">
                 <tr>
-                  <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Taak informatie</th>
+                  <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Informatie</th>
                   <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Beheer</th>
                 </tr>
               </thead>
@@ -221,12 +221,12 @@ const AdminDashboard = ({ tasks, users, onAddTask, onDeleteTask, onAddUser, onUp
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[999] flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl p-10 animate-in zoom-in duration-200">
             <div className="flex items-center justify-between mb-10">
-              <h3 className="text-2xl font-black text-slate-800">Taak Aanmaken</h3>
+              <h3 className="text-2xl font-black text-slate-800">Nieuwe Taak</h3>
               <button onClick=${() => setIsAddingTask(false)} className="p-3 bg-slate-50 text-slate-400 hover:text-slate-600 rounded-full transition-all"><${ICONS.XMark} className="w-6 h-6"/></button>
             </div>
             <form onSubmit=${(e) => { e.preventDefault(); onAddTask(formData); setIsAddingTask(false); setFormData({title:'', description:'', frequency:TaskFrequency.DAILY}); }} className="space-y-6">
               <input type="text" placeholder="Titel van de taak" className="w-full px-8 py-5 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-4 focus:ring-indigo-50" value=${formData.title} onInput=${e => setFormData({...formData, title: e.target.value})} required />
-              <textarea placeholder="Wat moet er gebeuren?" className="w-full px-8 py-5 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-4 focus:ring-indigo-50 min-h-[120px]" value=${formData.description} onInput=${e => setFormData({...formData, description: e.target.value})} />
+              <textarea placeholder="Korte omschrijving..." className="w-full px-8 py-5 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-4 focus:ring-indigo-50 min-h-[120px]" value=${formData.description} onInput=${e => setFormData({...formData, description: e.target.value})} />
               <select className="w-full px-8 py-5 rounded-2xl border border-slate-100 bg-slate-50 outline-none font-bold" value=${formData.frequency} onChange=${e => setFormData({...formData, frequency: e.target.value})}>
                 ${Object.values(TaskFrequency).map(f => html`<option key=${f} value=${f}>${f}</option>`)}
               </select>
@@ -243,7 +243,7 @@ const UserView = ({ tasks, selectedDate, setSelectedDate, onToggle, isCompleted,
   const weekDays = useMemo(() => getDaysOfWeek(new Date(selectedDate)), [selectedDate]);
   const activeTasks = tasks.filter(t => isTaskVisibleOnDate(t, selectedDate));
 
-  const changeWeek = (direction) => {
+  const shiftWeek = (direction) => {
     const d = new Date(selectedDate);
     d.setDate(d.getDate() + (direction * 7));
     setSelectedDate(formatDateISO(d));
@@ -253,20 +253,20 @@ const UserView = ({ tasks, selectedDate, setSelectedDate, onToggle, isCompleted,
     <div className="space-y-10 animate-in fade-in duration-700 pb-20">
       <div className="flex flex-col gap-2">
         <h2 className="text-4xl font-black text-slate-900 tracking-tight">Hoi ${currentUser.name}!</h2>
-        <p className="text-slate-500 font-bold text-lg">Je hebt ${activeTasks.length} taken op deze dag.</p>
+        <p className="text-slate-500 font-bold text-lg">Vandaag staan er ${activeTasks.length} taken gepland.</p>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div className="flex items-center justify-between px-2">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Selecteer een datum</p>
-          <div className="flex gap-2">
-            <button onClick=${() => changeWeek(-1)} className="p-2 hover:bg-white rounded-xl text-slate-400 hover:text-indigo-600 transition-all">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
-            </button>
-            <button onClick=${() => changeWeek(1)} className="p-2 hover:bg-white rounded-xl text-slate-400 hover:text-indigo-600 transition-all">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
-            </button>
-          </div>
+           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Selecteer een dag</h3>
+           <div className="flex items-center gap-2">
+             <button onClick=${() => shiftWeek(-1)} className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-indigo-600 transition-all shadow-sm active:scale-90">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+             </button>
+             <button onClick=${() => shiftWeek(1)} className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-indigo-600 transition-all shadow-sm active:scale-90">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+             </button>
+           </div>
         </div>
         
         <div className="grid grid-cols-7 gap-3 overflow-x-auto pb-4 no-scrollbar">
@@ -275,7 +275,7 @@ const UserView = ({ tasks, selectedDate, setSelectedDate, onToggle, isCompleted,
             const isSelected = ds === selectedDate;
             const isRealToday = formatDateISO(new Date()) === ds;
             return html`
-              <button key=${ds} onClick=${() => setSelectedDate(ds)} className=${`flex flex-col items-center p-5 min-w-[70px] rounded-3xl transition-all border-2 ${isSelected ? 'bg-indigo-600 border-indigo-600 text-white shadow-2xl shadow-indigo-200' : 'bg-white border-slate-50 text-slate-400 hover:border-indigo-100'} ${isRealToday && !isSelected ? 'border-indigo-200' : ''}`}>
+              <button key=${ds} onClick=${() => setSelectedDate(ds)} className=${`flex flex-col items-center p-5 min-w-[70px] rounded-[2rem] transition-all border-2 ${isSelected ? 'bg-indigo-600 border-indigo-600 text-white shadow-2xl shadow-indigo-100 scale-105' : 'bg-white border-slate-50 text-slate-400 hover:border-indigo-100'} ${isRealToday && !isSelected ? 'border-indigo-100' : ''}`}>
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] mb-2 opacity-60">${day.toLocaleDateString('nl-NL', { weekday: 'short' })}</span>
                 <span className="text-2xl font-black tracking-tighter">${day.getDate()}</span>
               </button>
@@ -287,7 +287,7 @@ const UserView = ({ tasks, selectedDate, setSelectedDate, onToggle, isCompleted,
       <div className="space-y-4">
         ${activeTasks.length > 0 ? activeTasks.map(task => html`
           <div key=${task.id} onClick=${() => onToggle(task.id, selectedDate)} className=${`group cursor-pointer p-8 rounded-[2.5rem] border-2 transition-all flex items-center gap-8 ${isCompleted(task.id, selectedDate) ? 'bg-emerald-50/30 border-emerald-100/50 opacity-60' : 'bg-white border-slate-50 shadow-sm hover:border-indigo-200'}`}>
-            <div className=${`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${isCompleted(task.id, selectedDate) ? 'bg-emerald-500 text-white shadow-lg' : 'bg-slate-50 text-slate-300'}`}>
+            <div className=${`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${isCompleted(task.id, selectedDate) ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-100' : 'bg-slate-50 text-slate-300'}`}>
               ${isCompleted(task.id, selectedDate) ? html`<${ICONS.Check} className="w-8 h-8" />` : html`<div className="w-4 h-4 border-4 border-current rounded-full" />`}
             </div>
             <div className="flex-1">
@@ -297,7 +297,7 @@ const UserView = ({ tasks, selectedDate, setSelectedDate, onToggle, isCompleted,
           </div>
         `) : html`
           <div className="bg-white rounded-[3rem] p-24 text-center border-4 border-dashed border-slate-50">
-            <p className="text-slate-400 font-black text-xl">Heerlijk! Niets te doen op deze dag. 🎉</p>
+            <p className="text-slate-400 font-black text-xl">Lekker bezig! Geen taken meer op deze dag. 🎉</p>
           </div>
         `}
       </div>
@@ -416,7 +416,7 @@ const App = () => {
         role: newUser.role,
         avatar: newUser.avatar 
       }]);
-    } catch (e) { console.error("Database sync failed:", e); }
+    } catch (e) { console.error("Sync failed:", e); }
   };
 
   const onUpdateUser = async (updatedUser) => {
@@ -437,15 +437,15 @@ const App = () => {
         role: updatedUser.role,
         avatar: finalAvatar
       }).eq('id', updatedUser.id);
-    } catch (e) { console.error("Database sync failed:", e); }
+    } catch (e) { console.error("Sync failed:", e); }
   };
 
   const onDeleteUser = async (id) => {
-    if (window.confirm('Verwijderen uit de database?')) {
+    if (window.confirm('Definitief verwijderen?')) {
       setUsers(prev => prev.filter(u => u.id !== id));
       try {
         await supabase.from('profiles').delete().eq('id', id);
-      } catch (e) { console.error("Database sync failed:", e); }
+      } catch (e) { console.error("Sync failed:", e); }
     }
   };
 
@@ -461,14 +461,14 @@ const App = () => {
         frequency: task.frequency, 
         start_date: task.startDate 
       }]);
-    } catch (e) { console.error("Database sync failed:", e); }
+    } catch (e) { console.error("Sync failed:", e); }
   };
 
   const removeTask = async (id) => {
     setTasks(prev => prev.filter(t => t.id !== id));
     try {
       await supabase.from('tasks').delete().eq('id', id);
-    } catch (e) { console.error("Database sync failed:", e); }
+    } catch (e) { console.error("Sync failed:", e); }
   };
 
   const toggleTask = async (taskId, date) => {
@@ -478,7 +478,7 @@ const App = () => {
       setCompletions(prev => prev.filter(c => c.id !== existing.id));
       try {
         await supabase.from('completions').delete().eq('id', existing.id);
-      } catch (e) { console.error("Database sync failed:", e); }
+      } catch (e) { console.error("Sync failed:", e); }
     } else {
       const completion = { id: Math.random().toString(36).substr(2, 9), taskId, completedAt: date, userId: currentUser.id };
       setCompletions(prev => [...prev, completion]);
@@ -489,7 +489,7 @@ const App = () => {
           completed_at: date, 
           user_id: currentUser.id 
         }]);
-      } catch (e) { console.error("Database sync failed:", e); }
+      } catch (e) { console.error("Sync failed:", e); }
     }
   };
 
