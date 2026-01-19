@@ -13,6 +13,7 @@
     body {
       font-family: 'Inter', sans-serif;
       background-color: #f8fafc;
+      margin: 0;
     }
     .custom-scrollbar::-webkit-scrollbar {
       width: 6px;
@@ -42,5 +43,7 @@
 </head>
 <body>
   <div id="root"></div>
+  <!-- Deze regel zorgt ervoor dat de app echt start op GitHub Pages -->
+  <script type="module" src="./index.tsx"></script>
 </body>
 </html>

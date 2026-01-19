@@ -66,7 +66,7 @@ const UserView: React.FC<{
   const activeTasks = tasks.filter(t => isTaskVisibleOnDate(t, selectedDate));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h2 className="text-3xl font-bold text-slate-800 tracking-tight">Hoi {currentUser.name}! 👋</h2>
@@ -78,12 +78,12 @@ const UserView: React.FC<{
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-2 md:gap-4">
         {weekDays.map(day => {
           const ds = formatDateISO(day);
           const sel = ds === selectedDate;
           return (
-            <button key={ds} onClick={() => setSelectedDate(ds)} className={`flex flex-col items-center p-3 rounded-2xl transition-all border ${sel ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' : 'bg-white border-slate-100 text-slate-400 hover:border-indigo-200'}`}>
+            <button key={ds} onClick={() => setSelectedDate(ds)} className={`flex flex-col items-center p-3 md:p-4 rounded-2xl transition-all border ${sel ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' : 'bg-white border-slate-100 text-slate-400 hover:border-indigo-200'}`}>
               <span className="text-[10px] font-black uppercase tracking-widest mb-1">{day.toLocaleDateString('nl-NL', { weekday: 'short' })}</span>
               <span className="text-xl font-bold">{day.getDate()}</span>
             </button>
@@ -114,8 +114,169 @@ const UserView: React.FC<{
   );
 };
 
-// AdminDashboard en FamilyOverview blijven grotendeels hetzelfde maar met gefixte imports (reeds toegevoegd bovenaan)
-// ... (Zelfde structuur als voorheen) ...
+const AdminDashboard: React.FC<{
+  tasks: Task[],
+  users: User[],
+  onAddTask: (t: Omit<Task, 'id' | 'createdAt'>) => void,
+  onUpdateTask: (t: Task) => void,
+  onDeleteTask: (id: string) => void,
+  onAddUser: () => void,
+  onUpdateUser: () => void,
+  onDeleteUser: () => void,
+}> = ({ tasks, users, onAddTask, onUpdateTask, onDeleteTask }) => {
+  const [isAdding, setIsAdding] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiSuggestions, setAiSuggestions] = useState<{title: string, description: string}[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [formData, setFormData] = useState({
+    title: '', description: '', assignedTo: '3', frequency: TaskFrequency.DAILY, startDate: formatDateISO(new Date()), scheduledTime: ''
+  });
+
+  const handleAiSuggest = async () => {
+    if (!aiPrompt) return;
+    setIsGenerating(true);
+    const suggestions = await geminiService.suggestTasks(aiPrompt);
+    setAiSuggestions(suggestions);
+    setIsGenerating(false);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingTask) onUpdateTask({ ...editingTask, ...formData });
+    else onAddTask(formData);
+    setIsAdding(false);
+    setEditingTask(null);
+    setFormData({ title: '', description: '', assignedTo: '3', frequency: TaskFrequency.DAILY, startDate: formatDateISO(new Date()), scheduledTime: '' });
+  };
+
+  return (
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h2 className="text-3xl font-bold text-slate-800 tracking-tight">Beheerpanel</h2>
+          <p className="text-slate-500 mt-1">Beheer gezinsprojecten en taken.</p>
+        </div>
+        <button onClick={() => setIsAdding(true)} className="bg-indigo-600 text-white px-6 py-4 rounded-2xl font-bold flex items-center gap-3 shadow-lg hover:bg-indigo-700 transition-all">
+          <ICONS.Plus className="w-5 h-5" /> Nieuwe Taak
+        </button>
+      </div>
+
+      <div className="bg-indigo-900 rounded-[2rem] p-8 text-white relative overflow-hidden shadow-xl">
+        <h3 className="text-xl font-bold mb-4 flex items-center gap-3"><ICONS.Sparkles className="w-6 h-6 text-indigo-300" /> AI Task Assistant</h3>
+        <div className="flex gap-2">
+          <input type="text" placeholder="Bijv: 'Lenteschoonmaak'" className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder:text-white/40 focus:outline-none" value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} />
+          <button onClick={handleAiSuggest} disabled={isGenerating} className="bg-white text-indigo-900 font-bold px-6 py-3 rounded-xl hover:bg-indigo-50 transition-all disabled:opacity-50">{isGenerating ? 'Denken...' : 'Genereer'}</button>
+        </div>
+        {aiSuggestions.length > 0 && (
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {aiSuggestions.map((s, i) => (
+              <div key={i} className="bg-white/10 border border-white/10 p-4 rounded-xl">
+                <h4 className="font-bold text-xs mb-1">{s.title}</h4>
+                <button onClick={() => { setFormData({ ...formData, title: s.title, description: s.description }); setIsAdding(true); }} className="text-[10px] font-bold text-indigo-300 uppercase mt-2">Gebruik</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
+        <table className="w-full text-left">
+          <thead className="bg-slate-50 border-b border-slate-100">
+            <tr>
+              <th className="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Taak</th>
+              <th className="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Ritme</th>
+              <th className="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Acties</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {tasks.map(task => (
+              <tr key={task.id} className="hover:bg-slate-50/50 transition-all">
+                <td className="px-8 py-6">
+                  <p className="font-bold text-slate-800">{task.title}</p>
+                </td>
+                <td className="px-8 py-6">
+                  <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-bold uppercase">{task.frequency}</span>
+                </td>
+                <td className="px-8 py-6">
+                  <button onClick={() => onDeleteTask(task.id)} className="p-2 text-red-400 hover:text-red-600 transition-all"><ICONS.Trash className="w-5 h-5" /></button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {(isAdding || editingTask) && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-8 animate-in zoom-in duration-200">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-2xl font-bold text-slate-800">Taak Toevoegen</h3>
+              <button onClick={() => setIsAdding(false)} className="p-2 hover:bg-slate-100 rounded-full transition-all"><ICONS.XMark className="w-6 h-6 text-slate-400" /></button>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <input type="text" className="w-full px-5 py-3 rounded-xl border border-slate-200" placeholder="Titel" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required />
+              <textarea className="w-full px-5 py-3 rounded-xl border border-slate-200" placeholder="Beschrijving" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+              <select className="w-full px-5 py-3 rounded-xl border border-slate-200" value={formData.frequency} onChange={e => setFormData({...formData, frequency: e.target.value as TaskFrequency})}>
+                {Object.values(TaskFrequency).map(f => <option key={f} value={f}>{f}</option>)}
+              </select>
+              <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-indigo-700 transition-all">Opslaan</button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const FamilyOverview: React.FC<{ 
+  tasks: Task[], 
+  users: User[], 
+  completions: TaskCompletion[], 
+  selectedDate: string,
+  navigateWeeks: (w: number) => void
+}> = ({ tasks, users, completions, selectedDate, navigateWeeks }) => {
+  const weekDays = useMemo(() => getDaysOfWeek(new Date(selectedDate)), [selectedDate]);
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <h2 className="text-3xl font-bold text-slate-800 tracking-tight">Gezinsoverzicht</h2>
+      </div>
+      <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
+        <table className="w-full text-left">
+          <thead className="bg-slate-50 border-b border-slate-100">
+            <tr>
+              <th className="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Dag</th>
+              <th className="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Taken</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {weekDays.map(day => {
+              const ds = formatDateISO(day);
+              const dayTasks = tasks.filter(t => isTaskVisibleOnDate(t, ds));
+              return (
+                <tr key={ds} className="hover:bg-slate-50/50 transition-all">
+                  <td className="px-8 py-6 font-bold text-slate-600">
+                    {day.toLocaleDateString('nl-NL', { weekday: 'long' })} {day.getDate()}
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="flex flex-wrap gap-2">
+                      {dayTasks.map(t => (
+                        <span key={t.id} className={`px-3 py-1 rounded-full text-[10px] font-bold border ${completions.some(c => c.taskId === t.id && c.completedAt === ds) ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+                          {t.title}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -136,8 +297,7 @@ const App: React.FC = () => {
       }, 4000);
 
       try {
-        // 1. Haal profielen op
-        const { data: profiles, error: pError } = await supabase.from('profiles').select('*');
+        const { data: profiles } = await supabase.from('profiles').select('*');
         if (profiles) {
           const mappedUsers: User[] = profiles.map(p => ({
             id: p.id, name: p.name, email: p.email, avatar: p.avatar, role: p.role as UserRole, password: p.password
@@ -145,7 +305,6 @@ const App: React.FC = () => {
           setUsers([...mappedUsers, ...INITIAL_USERS]);
         }
 
-        // 2. Haal taken op
         const { data: dbTasks } = await supabase.from('tasks').select('*');
         if (dbTasks) {
           setTasks(dbTasks.map(t => ({
@@ -153,7 +312,6 @@ const App: React.FC = () => {
           })));
         }
 
-        // 3. Haal completions op
         const { data: dbCompletions } = await supabase.from('completions').select('*');
         if (dbCompletions) {
           setCompletions(dbCompletions.map(c => ({
@@ -191,7 +349,20 @@ const App: React.FC = () => {
     localStorage.removeItem('session');
   };
 
-  // Functies voor taken (identiek aan voorheen maar met await)
+  const addTask = async (newTask: Omit<Task, 'id' | 'createdAt'>) => {
+    const id = Math.random().toString(36).substr(2, 9);
+    const task: Task = { ...newTask, id, createdAt: new Date().toISOString() };
+    setTasks(prev => [task, ...prev]);
+    await supabase.from('tasks').insert([{
+      id: task.id, title: task.title, description: task.description, assigned_to: task.assignedTo, frequency: task.frequency, start_date: task.startDate, scheduled_time: task.scheduledTime
+    }]);
+  };
+
+  const removeTask = async (id: string) => {
+    setTasks(prev => prev.filter(t => t.id !== id));
+    await supabase.from('tasks').delete().eq('id', id);
+  };
+
   const toggleTask = async (taskId: string, date: string) => {
     if (!currentUser) return;
     const existing = completions.find(c => c.taskId === taskId && c.completedAt === date);
@@ -226,25 +397,4 @@ const App: React.FC = () => {
       <nav className="w-full md:w-64 bg-white border-r border-slate-200 flex flex-col p-6 gap-8">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-indigo-100">T</div>
-          <h1 className="text-xl font-bold text-slate-800 tracking-tight">TaskPulse</h1>
-        </div>
-        <div className="flex flex-col gap-1">
-          <button onClick={() => setViewMode('daily')} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${viewMode === 'daily' ? 'bg-indigo-50 text-indigo-700 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}>
-            <ICONS.Calendar className="w-5 h-5" /> Mijn Taken
-          </button>
-          <button onClick={() => setViewMode('team')} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${viewMode === 'team' ? 'bg-indigo-50 text-indigo-700 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}>
-            <ICONS.Users className="w-5 h-5" /> Gezinsoverzicht
-          </button>
-          {currentUser.role === UserRole.ADMIN && (
-            <button onClick={() => setViewMode('manage')} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${viewMode === 'manage' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}>
-              <ICONS.Layout className="w-5 h-5" /> Beheer
-            </button>
-          )}
-        </div>
-        <div className="mt-auto pt-6 border-t border-slate-100">
-           <div className="flex items-center gap-3 mb-6">
-             <img src={currentUser.avatar} className="w-8 h-8 rounded-full" alt="" />
-             <p className="font-bold text-sm text-slate-800 truncate">{currentUser.name}</p>
-           </div>
-           <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-2 text-slate-400 hover:text-red-500 transition-all font-medium">
-             <ICONS.Logout className="w-5 h-5" /> Uitloggen
+          <h1 className="text-xl font-bold text-slate-800
