@@ -5,10 +5,16 @@ export class GeminiService {
   private ai: GoogleGenAI;
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    // TIP: Als je op GitHub Pages host, vervang 'process.env.API_KEY' 
+    // hieronder door je eigen sleutel tussen aanhalingstekens als je geen 
+    // build-systeem gebruikt dat env vars ondersteunt.
+    // Bijv: const key = 'JOUW_SLEUTEL_HIER';
+    const key = process.env.API_KEY || ''; 
+    this.ai = new GoogleGenAI({ apiKey: key });
   }
 
   async suggestTasks(prompt: string) {
+    if (!this.ai) return [];
     try {
       const response = await this.ai.models.generateContent({
         model: 'gemini-3-flash-preview',
@@ -44,7 +50,6 @@ export class GeminiService {
         model: 'gemini-3-flash-preview',
         contents: "Geef mij ALLEEN een korte, inspirerende Nederlandse quote over productiviteit of samenwerking. Geen uitleg, geen vertaling, geen inleiding, geen opmaak. Gewoon de tekst van de quote zelf.",
       });
-      // Cleanup any extra fluff or markdown
       let text = response.text || "Samen komen we verder.";
       return text.replace(/^["'>\s*]+|["'\s*]+$/g, '').split('\n')[0].trim();
     } catch (error) {
