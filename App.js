@@ -25,7 +25,7 @@ const LoginView = ({ onLogin }) => {
 
   return html`
     <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] p-4">
-      <div className="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl p-10 border border-slate-100">
+      <div className="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl p-10 border border-slate-100 animate-in zoom-in duration-300">
         <div className="flex flex-col items-center gap-6 mb-10 text-center">
           <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white font-bold text-3xl shadow-lg shadow-indigo-100">T</div>
           <div>
@@ -61,12 +61,12 @@ const UserView = ({ tasks, selectedDate, setSelectedDate, onToggle, isCompleted,
         <p className="text-slate-500 font-medium">Laten we de dag doornemen.</p>
       </div>
 
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-2 overflow-x-auto pb-2">
         ${weekDays.map(day => {
           const ds = formatDateISO(day);
           const isToday = ds === selectedDate;
           return html`
-            <button key=${ds} onClick=${() => setSelectedDate(ds)} className=${`flex flex-col items-center p-3 rounded-2xl transition-all border ${isToday ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' : 'bg-white border-slate-100 text-slate-400 hover:border-indigo-200'}`}>
+            <button key=${ds} onClick=${() => setSelectedDate(ds)} className=${`flex flex-col items-center p-3 min-w-[50px] rounded-2xl transition-all border ${isToday ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' : 'bg-white border-slate-100 text-slate-400 hover:border-indigo-200'}`}>
               <span className="text-[10px] font-black uppercase tracking-widest mb-1">${day.toLocaleDateString('nl-NL', { weekday: 'short' })}</span>
               <span className="text-xl font-bold">${day.getDate()}</span>
             </button>
@@ -95,29 +95,45 @@ const UserView = ({ tasks, selectedDate, setSelectedDate, onToggle, isCompleted,
   `;
 };
 
-const UserManagement = ({ users, onAddUser, onDeleteUser }) => {
-  const [isAdding, setIsAdding] = useState(false);
+const UserManagement = ({ users, onAddUser, onUpdateUser, onDeleteUser }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
   const [formData, setFormData] = useState({ name: '', email: '', password: '123', role: UserRole.CHILD });
+
+  const openAddModal = () => {
+    setEditingUser(null);
+    setFormData({ name: '', email: '', password: '123', role: UserRole.CHILD });
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (user) => {
+    setEditingUser(user);
+    setFormData({ name: user.name, email: user.email, password: user.password || '123', role: user.role });
+    setIsModalOpen(true);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onAddUser(formData);
-    setIsAdding(false);
-    setFormData({ name: '', email: '', password: '123', role: UserRole.CHILD });
+    if (editingUser) {
+      onUpdateUser({ ...editingUser, ...formData });
+    } else {
+      onAddUser(formData);
+    }
+    setIsModalOpen(false);
   };
 
   return html`
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-2xl font-black text-slate-800 tracking-tight">Gebruikersbeheer</h3>
-        <button onClick=${() => setIsAdding(true)} className="bg-emerald-500 text-white px-6 py-3 rounded-2xl font-bold shadow-lg hover:bg-emerald-600 transition-all flex items-center gap-2">
-          <${ICONS.Plus} className="w-5 h-5" /> Gebruiker Toevoegen
+        <button onClick=${openAddModal} className="bg-emerald-500 text-white px-6 py-3 rounded-2xl font-bold shadow-lg hover:bg-emerald-600 transition-all flex items-center gap-2">
+          <${ICONS.Plus} className="w-5 h-5" /> Toevoegen
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         ${users.map(user => html`
-          <div key=${user.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+          <div key=${user.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow group">
             <div className="w-14 h-14 bg-indigo-50 rounded-full flex items-center justify-center overflow-hidden border-2 border-white shadow-inner">
                <img src=${user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`} className="w-full h-full object-cover" />
             </div>
@@ -128,34 +144,39 @@ const UserManagement = ({ users, onAddUser, onDeleteUser }) => {
                  <span className=${`text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest ${user.role === UserRole.ADMIN ? 'bg-indigo-100 text-indigo-600' : 'bg-emerald-100 text-emerald-600'}`}>${user.role}</span>
               </div>
             </div>
-            ${user.id !== 'admin-1' && user.id !== 'team-3' && html`
-              <button onClick=${() => onDeleteUser(user.id)} className="p-3 text-red-400 hover:bg-red-50 rounded-xl transition-all">
-                <${ICONS.Trash} className="w-4 h-4" />
+            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button onClick=${() => openEditModal(user)} className="p-2 text-indigo-400 hover:bg-indigo-50 rounded-xl transition-all">
+                <${ICONS.Pencil} className="w-4 h-4" />
               </button>
-            `}
+              ${user.id !== 'admin-1' && user.id !== 'team-3' && html`
+                <button onClick=${() => onDeleteUser(user.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-xl transition-all">
+                  <${ICONS.Trash} className="w-4 h-4" />
+                </button>
+              `}
+            </div>
           </div>
         `)}
       </div>
 
-      ${isAdding && html`
+      ${isModalOpen && html`
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-8 animate-in zoom-in duration-200">
             <div className="flex items-center justify-between mb-8">
-              <h3 className="text-xl font-black text-slate-800">Nieuwe Gebruiker</h3>
-              <button onClick=${() => setIsAdding(false)} className="p-2 text-slate-400 hover:text-slate-600 transition-colors"><${ICONS.XMark} className="w-6 h-6"/></button>
+              <h3 className="text-xl font-black text-slate-800">${editingUser ? 'Gebruiker Bewerken' : 'Nieuwe Gebruiker'}</h3>
+              <button onClick=${() => setIsModalOpen(false)} className="p-2 text-slate-400 hover:text-slate-600 transition-colors"><${ICONS.XMark} className="w-6 h-6"/></button>
             </div>
             <form onSubmit=${handleSubmit} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Volledige Naam</label>
-                <input type="text" className="w-full px-6 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-600 transition-all" value=${formData.name} onInput=${e => setFormData({...formData, name: e.target.value})} required />
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Naam</label>
+                <input type="text" className="w-full px-6 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-600" value=${formData.name} onInput=${e => setFormData({...formData, name: e.target.value})} required />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-2">E-mailadres</label>
-                <input type="email" className="w-full px-6 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-600 transition-all" value=${formData.email} onInput=${e => setFormData({...formData, email: e.target.value})} required />
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-2">E-mail</label>
+                <input type="email" className="w-full px-6 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-600" value=${formData.email} onInput=${e => setFormData({...formData, email: e.target.value})} required />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Wachtwoord</label>
-                <input type="password" className="w-full px-6 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-600 transition-all" value=${formData.password} onInput=${e => setFormData({...formData, password: e.target.value})} required />
+                <input type="text" className="w-full px-6 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-600" value=${formData.password} onInput=${e => setFormData({...formData, password: e.target.value})} required />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Rol</label>
@@ -164,7 +185,9 @@ const UserManagement = ({ users, onAddUser, onDeleteUser }) => {
                   <option value=${UserRole.ADMIN}>Admin</option>
                 </select>
               </div>
-              <button type="submit" className="w-full bg-emerald-500 text-white font-bold py-5 rounded-2xl shadow-lg mt-4 hover:bg-emerald-600 active:scale-[0.98] transition-all">Account Aanmaken</button>
+              <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-5 rounded-2xl shadow-lg mt-4 hover:bg-indigo-700 transition-all">
+                ${editingUser ? 'Wijzigingen Opslaan' : 'Gebruiker Aanmaken'}
+              </button>
             </form>
           </div>
         </div>
@@ -173,16 +196,16 @@ const UserManagement = ({ users, onAddUser, onDeleteUser }) => {
   `;
 };
 
-const AdminDashboard = ({ tasks, users, onAddTask, onDeleteTask, onAddUser, onDeleteUser }) => {
+const AdminDashboard = ({ tasks, users, onAddTask, onDeleteTask, onAddUser, onUpdateUser, onDeleteUser }) => {
   const [formData, setFormData] = useState({ title: '', description: '', frequency: TaskFrequency.DAILY });
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [activeTab, setActiveTab] = useState('tasks');
 
   return html`
     <div className="space-y-10">
-      <div className="flex gap-8 border-b border-slate-100">
-        <button onClick=${() => setActiveTab('tasks')} className=${`pb-4 px-2 font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'tasks' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>Taken</button>
-        <button onClick=${() => setActiveTab('users')} className=${`pb-4 px-2 font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'users' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>Gebruikers</button>
+      <div className="flex bg-white p-1.5 rounded-2xl border border-slate-100 w-fit mx-auto md:mx-0">
+        <button onClick=${() => setActiveTab('tasks')} className=${`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'tasks' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>Taken</button>
+        <button onClick=${() => setActiveTab('users')} className=${`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'users' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>Gebruikers</button>
       </div>
 
       ${activeTab === 'tasks' ? html`
@@ -198,8 +221,8 @@ const AdminDashboard = ({ tasks, users, onAddTask, onDeleteTask, onAddUser, onDe
             <table className="w-full text-left">
               <thead className="bg-slate-50 border-b border-slate-100">
                 <tr>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Taak informatie</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Beheer</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Informatie</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actie</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -223,7 +246,7 @@ const AdminDashboard = ({ tasks, users, onAddTask, onDeleteTask, onAddUser, onDe
         </div>
       ` : html`
         <div className="animate-in slide-in-from-bottom-2 duration-300">
-           <${UserManagement} users=${users} onAddUser=${onAddUser} onDeleteUser=${onDeleteUser} />
+           <${UserManagement} users=${users} onAddUser=${onAddUser} onUpdateUser=${onUpdateUser} onDeleteUser=${onDeleteUser} />
         </div>
       `}
 
@@ -261,6 +284,7 @@ const App = () => {
   const [viewMode, setViewMode] = useState('daily');
   const [isLoading, setIsLoading] = useState(true);
   
+  // Persist users to localStorage
   useEffect(() => {
     localStorage.setItem('tp_users', JSON.stringify(users));
   }, [users]);
@@ -272,7 +296,6 @@ const App = () => {
         if (dbTasks && dbTasks.length > 0) {
            setTasks(dbTasks.map(t => ({...t, assignedTo: t.assigned_to, frequency: t.frequency})));
         } else {
-           // Fallback naar localStorage voor demo doeleinden
            const savedTasks = localStorage.getItem('tp_tasks');
            if (savedTasks) setTasks(JSON.parse(savedTasks));
         }
@@ -305,7 +328,6 @@ const App = () => {
     }
   }, []);
 
-  // Sync tasks and completions to localStorage as backup
   useEffect(() => {
     if (!isLoading) {
       localStorage.setItem('tp_tasks', JSON.stringify(tasks));
@@ -314,7 +336,7 @@ const App = () => {
   }, [tasks, completions, isLoading]);
 
   const handleLogin = (email, pass) => {
-    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === pass);
+    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && String(u.password) === String(pass));
     if (user) {
       setCurrentUser(user);
       localStorage.setItem('session', JSON.stringify(user));
@@ -336,6 +358,14 @@ const App = () => {
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.name}`
     };
     setUsers(prev => [...prev, newUser]);
+  };
+
+  const onUpdateUser = (updatedUser) => {
+    setUsers(prev => prev.map(u => u.id === updatedUser.id ? { ...updatedUser, avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${updatedUser.name}` } : u));
+    if (currentUser?.id === updatedUser.id) {
+       setCurrentUser(updatedUser);
+       localStorage.setItem('session', JSON.stringify(updatedUser));
+    }
   };
 
   const onDeleteUser = (id) => {
@@ -379,7 +409,7 @@ const App = () => {
   if (isLoading) return html`
     <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] flex-col gap-6">
       <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-      <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">Initialiseren...</p>
+      <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">Laden...</p>
     </div>
   `;
 
@@ -394,7 +424,7 @@ const App = () => {
         </div>
         
         <div className="flex flex-col gap-2">
-          <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-2 ml-2">Navigation</p>
+          <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-2 ml-2">Navigatie</p>
           <button onClick=${() => setViewMode('daily')} className=${`flex items-center gap-4 px-5 py-4 rounded-2xl transition-all font-bold ${viewMode === 'daily' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-400 hover:bg-slate-50'}`}>
             <${ICONS.Calendar} className="w-5 h-5" /> Mijn Taken
           </button>
@@ -405,30 +435,4 @@ const App = () => {
           `}
         </div>
 
-        <div className="mt-auto pt-8 border-t border-slate-50 flex flex-col gap-6">
-           <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-             <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center overflow-hidden border border-slate-100 shadow-sm">
-               <img src=${currentUser.avatar} className="w-full h-full object-cover" alt="" />
-             </div>
-             <div className="overflow-hidden">
-               <p className="font-bold text-sm text-slate-800 truncate">${currentUser.name}</p>
-               <p className="text-[10px] text-slate-400 uppercase font-black">${currentUser.role}</p>
-             </div>
-           </div>
-           <button onClick=${handleLogout} className="flex items-center gap-4 px-5 py-3 text-slate-400 hover:text-red-500 font-bold transition-all">
-             <${ICONS.Logout} className="w-5 h-5" /> Uitloggen
-           </button>
-        </div>
-      </nav>
-
-      <main className="flex-1 p-6 md:p-12 overflow-y-auto">
-        <div className="max-w-4xl mx-auto">
-          ${viewMode === 'daily' && html`<${UserView} tasks=${tasks.filter(t => t.assignedTo === currentUser.id || t.assignedTo === 'team-3')} selectedDate=${selectedDate} setSelectedDate=${setSelectedDate} onToggle=${toggleTask} isCompleted=${(tid, d) => completions.some(c => c.taskId === tid && c.completedAt === d)} currentUser=${currentUser} />`}
-          ${viewMode === 'manage' && currentUser.role === UserRole.ADMIN && html`<${AdminDashboard} tasks=${tasks} users=${users} onAddTask=${addTask} onDeleteTask=${removeTask} onAddUser=${onAddUser} onDeleteUser=${onDeleteUser} />`}
-        </div>
-      </main>
-    </div>
-  `;
-};
-
-export default App;
+        <div
