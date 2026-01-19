@@ -2,21 +2,13 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 export class GeminiService {
-  private ai: GoogleGenAI;
-
-  constructor() {
-    // TIP: Als je op GitHub Pages host, vervang 'process.env.API_KEY' 
-    // hieronder door je eigen sleutel tussen aanhalingstekens als je geen 
-    // build-systeem gebruikt dat env vars ondersteunt.
-    // Bijv: const key = 'JOUW_SLEUTEL_HIER';
-    const key = process.env.API_KEY || ''; 
-    this.ai = new GoogleGenAI({ apiKey: key });
-  }
-
+  // Always initialize GoogleGenAI within the methods or as needed to ensure process.env.API_KEY is used correctly.
+  
   async suggestTasks(prompt: string) {
-    if (!this.ai) return [];
+    // ALWAYS create a new instance right before making an API call to ensure it always uses the most up-to-date API key.
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     try {
-      const response = await this.ai.models.generateContent({
+      const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `Given this team context or request: "${prompt}", generate a list of 3-5 actionable tasks. Return them as a JSON array of objects with 'title' and 'description'.`,
         config: {
@@ -29,15 +21,22 @@ export class GeminiService {
                 title: { type: Type.STRING, description: 'Short task title' },
                 description: { type: Type.STRING, description: 'Clear task description' }
               },
-              required: ['title', 'description']
+              required: ['title', 'description'],
+              propertyOrdering: ["title", "description"]
             }
           }
         }
       });
 
+      // Directly access .text property
       const text = response.text;
       if (!text) return [];
-      return JSON.parse(text);
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        console.error("JSON parse error from Gemini:", e, text);
+        return [];
+      }
     } catch (error) {
       console.error("Gemini suggestTasks error:", error);
       return [];
@@ -45,14 +44,17 @@ export class GeminiService {
   }
 
   async getProductivityQuote() {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     try {
-      const response = await this.ai.models.generateContent({
+      const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: "Geef mij ALLEEN een korte, inspirerende Nederlandse quote over productiviteit of samenwerking. Geen uitleg, geen vertaling, geen inleiding, geen opmaak. Gewoon de tekst van de quote zelf.",
       });
+      // Directly access .text property
       let text = response.text || "Samen komen we verder.";
       return text.replace(/^["'>\s*]+|["'\s*]+$/g, '').split('\n')[0].trim();
     } catch (error) {
+      console.error("Gemini getProductivityQuote error:", error);
       return "Samen komen we verder.";
     }
   }
