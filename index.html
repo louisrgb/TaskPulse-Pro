@@ -15,18 +15,17 @@
       background-color: #f8fafc;
       margin: 0;
     }
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 6px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: #f1f1f1;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 10px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
+    #fallback-error {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: white;
+      z-index: 9999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
     }
   </style>
 <script type="importmap">
@@ -43,7 +42,22 @@
 </head>
 <body>
   <div id="root"></div>
-  <!-- Deze regel zorgt ervoor dat de app echt start op GitHub Pages -->
+  
+  <div id="fallback-error">
+    <h2 style="color: #ef4444; font-weight: bold; font-size: 1.5rem; margin-bottom: 1rem;">Oeps! De app start niet.</h2>
+    <p style="color: #64748b; max-width: 400px;">Dit komt meestal doordat GitHub Pages de .tsx bestanden niet goed kan laden. Zorg ervoor dat je de bestanden via een 'build' proces publiceert of gebruik een browser die ES-modules volledig ondersteunt.</p>
+    <button onclick="window.location.reload()" style="margin-top: 1.5rem; background: #6366f1; color: white; padding: 0.75rem 1.5rem; border-radius: 0.75rem; border: none; font-weight: bold; cursor: pointer;">Probeer Opnieuw</button>
+  </div>
+
+  <script type="module">
+    // Fail-safe check
+    setTimeout(() => {
+      const root = document.getElementById('root');
+      if (root && root.innerHTML === '') {
+        document.getElementById('fallback-error').style.display = 'flex';
+      }
+    }, 6000);
+  </script>
   <script type="module" src="./index.tsx"></script>
 </body>
 </html>
