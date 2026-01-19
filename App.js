@@ -59,7 +59,11 @@ const LoginView = ({ onLogin, syncError }) => {
 
 const UserView = ({ tasks, selectedDate, setSelectedDate, onToggle, isCompleted, currentUser }) => {
   const weekDays = useMemo(() => getDaysOfWeek(new Date(selectedDate)), [selectedDate]);
-  const activeTasks = tasks.filter(t => isTaskVisibleOnDate(t, selectedDate));
+  // Filter taken: alleen voor de huidige gebruiker of voor 'team-all'
+  const activeTasks = tasks.filter(t => 
+    isTaskVisibleOnDate(t, selectedDate) && 
+    (t.assignedTo === currentUser.id || t.assignedTo === 'team-all')
+  );
 
   const shiftWeek = (direction) => {
     const d = new Date(selectedDate);
@@ -117,10 +121,110 @@ const UserView = ({ tasks, selectedDate, setSelectedDate, onToggle, isCompleted,
           </div>
         `) : html`
           <div className="bg-white rounded-[2.5rem] p-16 text-center border-2 border-dashed border-slate-100">
-            <p className="text-slate-400 font-black">Alles gedaan voor vandaag! 🎉</p>
+            <p className="text-slate-400 font-black">Geen taken voor jou vandaag! 🎉</p>
           </div>
         `}
       </div>
+    </div>
+  `;
+};
+
+const AdminDashboard = ({ tasks, users, onAddTask, onDeleteTask }) => {
+  const [isAdding, setIsAdding] = useState(false);
+  const [formData, setFormData] = useState({ 
+    title: '', 
+    description: '', 
+    frequency: 'Dagelijks',
+    assignedTo: 'team-all' 
+  });
+
+  const getUserName = (id) => users.find(u => u.id === id)?.name || 'Onbekend';
+
+  return html`
+    <div className="space-y-8 animate-in slide-in-from-bottom-4">
+       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-black text-slate-800">Beheer</h2>
+            <p className="text-slate-400 font-bold text-sm">Wijs taken toe aan specifieke personen.</p>
+          </div>
+          <button onClick=${() => setIsAdding(true)} className="bg-indigo-600 text-white px-6 py-4 rounded-2xl font-black shadow-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
+            <${ICONS.Plus} className="w-5 h-5" /> Nieuwe Taak
+          </button>
+       </div>
+
+       <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50 border-b border-slate-100">
+              <tr>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Inhoud</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Toegewezen aan</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actie</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              ${tasks.map(t => html`
+                <tr key=${t.id} className="hover:bg-slate-50/50 transition-all">
+                  <td className="px-8 py-6">
+                    <p className="font-bold text-slate-800">${t.title}</p>
+                    <p className="text-xs text-slate-400">${t.frequency}</p>
+                  </td>
+                  <td className="px-8 py-6">
+                    <span className=${`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${t.assignedTo === 'team-all' ? 'bg-blue-50 text-blue-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                      ${getUserName(t.assignedTo)}
+                    </span>
+                  </td>
+                  <td className="px-8 py-6 text-right">
+                    <button onClick=${() => onDeleteTask(t.id)} className="p-3 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all">
+                      <${ICONS.Trash} className="w-5 h-5" />
+                    </button>
+                  </td>
+                </tr>
+              `)}
+            </tbody>
+          </table>
+          ${tasks.length === 0 && html`<div className="p-20 text-center text-slate-300 font-bold">Geen taken gevonden.</div>`}
+       </div>
+
+       ${isAdding && html`
+         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[999] flex items-center justify-center p-4">
+           <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-8 animate-in zoom-in duration-200">
+             <div className="flex items-center justify-between mb-8">
+               <h3 className="text-xl font-black text-slate-800">Taak Toevoegen</h3>
+               <button onClick=${() => setIsAdding(false)} className="p-2 text-slate-400"><${ICONS.XMark} className="w-6 h-6"/></button>
+             </div>
+             <form onSubmit=${(e) => { 
+               e.preventDefault(); 
+               onAddTask(formData); 
+               setIsAdding(false); 
+               setFormData({title:'', description:'', frequency:'Dagelijks', assignedTo: 'team-all'}); 
+             }} className="space-y-4">
+               <div className="space-y-1">
+                 <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Titel</label>
+                 <input type="text" className="w-full px-6 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none" value=${formData.title} onInput=${e => setFormData({...formData, title: e.target.value})} required />
+               </div>
+               <div className="space-y-1">
+                 <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Omschrijving</label>
+                 <textarea className="w-full px-6 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none" value=${formData.description} onInput=${e => setFormData({...formData, description: e.target.value})} />
+               </div>
+               <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-1">
+                   <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Herhaling</label>
+                   <select className="w-full px-6 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none font-bold" value=${formData.frequency} onChange=${e => setFormData({...formData, frequency: e.target.value})}>
+                     ${Object.values(TaskFrequency).map(f => html`<option key=${f} value=${f}>${f}</option>`)}
+                   </select>
+                 </div>
+                 <div className="space-y-1">
+                   <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Toewijzen aan</label>
+                   <select className="w-full px-6 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none font-bold" value=${formData.assignedTo} onChange=${e => setFormData({...formData, assignedTo: e.target.value})}>
+                     ${users.map(u => html`<option key=${u.id} value=${u.id}>${u.name}</option>`)}
+                   </select>
+                 </div>
+               </div>
+               <button type="submit" className="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg mt-4">Opslaan</button>
+             </form>
+           </div>
+         </div>
+       `}
     </div>
   `;
 };
@@ -151,7 +255,6 @@ const App = () => {
           supabase.from('completions').select('*')
         ]);
 
-        if (profRes.error) console.warn("Profiles fetch error:", profRes.error);
         if (profRes.data) {
           const merged = [...INITIAL_USERS];
           profRes.data.forEach(p => {
@@ -210,7 +313,7 @@ const App = () => {
         id: tempId,
         title: newTask.title, 
         description: newTask.description, 
-        assigned_to: 'team-all', 
+        assigned_to: newTask.assignedTo || 'team-all', 
         frequency: newTask.frequency, 
         start_date: startDate 
       }]).select();
@@ -319,50 +422,7 @@ const App = () => {
       <main className="flex-1 p-6 md:p-12 overflow-y-auto bg-[#f8fafc]">
         <div className="max-w-4xl mx-auto">
           ${viewMode === 'daily' && html`<${UserView} tasks=${tasks} selectedDate=${selectedDate} setSelectedDate=${setSelectedDate} onToggle=${toggleTask} isCompleted=${(tid, d) => completions.some(c => c.taskId === tid && c.completedAt === d)} currentUser=${currentUser} />`}
-          ${viewMode === 'manage' && currentUser.role === UserRole.ADMIN && html`
-            <div className="space-y-8 animate-in slide-in-from-bottom-4">
-               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <h2 className="text-3xl font-black text-slate-800">Admin</h2>
-                    <p className="text-slate-400 font-bold text-sm">Beheer cloud taken voor iedereen.</p>
-                  </div>
-                  <button onClick=${() => {
-                    const title = prompt("Titel:");
-                    const desc = prompt("Omschrijving:");
-                    if (title) addTask({title, description: desc || '', frequency: 'Dagelijks'});
-                  }} className="bg-indigo-600 text-white px-6 py-4 rounded-2xl font-black shadow-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
-                    <${ICONS.Plus} className="w-5 h-5" /> Nieuwe Taak
-                  </button>
-               </div>
-
-               <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
-                  <table className="w-full text-left">
-                    <thead className="bg-slate-50 border-b border-slate-100">
-                      <tr>
-                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Inhoud</th>
-                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actie</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      ${tasks.map(t => html`
-                        <tr key=${t.id} className="hover:bg-slate-50/50 transition-all">
-                          <td className="px-8 py-6">
-                            <p className="font-bold text-slate-800">${t.title}</p>
-                            <p className="text-xs text-slate-400">${t.frequency}</p>
-                          </td>
-                          <td className="px-8 py-6 text-right">
-                            <button onClick=${() => removeTask(t.id)} className="p-3 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all">
-                              <${ICONS.Trash} className="w-5 h-5" />
-                            </button>
-                          </td>
-                        </tr>
-                      `)}
-                    </tbody>
-                  </table>
-                  ${tasks.length === 0 && html`<div className="p-20 text-center text-slate-300 font-bold">Geen taken gevonden in de cloud.</div>`}
-               </div>
-            </div>
-          `}
+          ${viewMode === 'manage' && currentUser.role === UserRole.ADMIN && html`<${AdminDashboard} tasks=${tasks} users=${users} onAddTask=${addTask} onDeleteTask=${removeTask} />`}
         </div>
       </main>
     </div>
