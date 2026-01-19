@@ -316,54 +316,35 @@ const UserView = ({ tasks, selectedDate, setSelectedDate, onToggle, isCompleted,
 
 const App = () => {
   const [currentUser, setCurrentUser] = useState(null);
-  
-  // Initialiseer staten DIRECT uit localStorage voor maximale persistentie
-  const [users, setUsers] = useState(() => {
-    const saved = localStorage.getItem('tp_users');
-    let parsed = saved ? JSON.parse(saved) : INITIAL_USERS;
-    return parsed;
-  });
-
-  const [tasks, setTasks] = useState(() => {
-    const saved = localStorage.getItem('tp_tasks');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [completions, setCompletions] = useState(() => {
-    const saved = localStorage.getItem('tp_completions');
-    return saved ? JSON.parse(saved) : [];
-  });
-
+  const [users, setUsers] = useState(INITIAL_USERS);
+  const [tasks, setTasks] = useState([]);
+  const [completions, setCompletions] = useState([]);
   const [selectedDate, setSelectedDate] = useState(formatDateISO(new Date()));
   const [viewMode, setViewMode] = useState('daily');
   const [isLoading, setIsLoading] = useState(true);
-  
-  // Effect om lokale wijzigingen op te slaan
-  useEffect(() => {
-    localStorage.setItem('tp_users', JSON.stringify(users));
-    localStorage.setItem('tp_tasks', JSON.stringify(tasks));
-    localStorage.setItem('tp_completions', JSON.stringify(completions));
-  }, [users, tasks, completions]);
 
+  // Initialisatie effect - Haal alles op van Supabase
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch Profiles
+        // 1. Gebruikers / Profielen
         const { data: dbProfiles } = await supabase.from('profiles').select('*');
         if (dbProfiles && dbProfiles.length > 0) {
-           const merged = [...INITIAL_USERS];
-           dbProfiles.forEach(p => {
-             const idx = merged.findIndex(m => m.email.toLowerCase() === p.email.toLowerCase());
-             if (idx > -1) {
-               merged[idx] = { ...merged[idx], ...p };
-             } else {
-               merged.push({ ...p, role: p.role || UserRole.CHILD });
-             }
+           setUsers(prev => {
+             const merged = [...INITIAL_USERS];
+             dbProfiles.forEach(p => {
+               const idx = merged.findIndex(m => m.id === p.id || m.email.toLowerCase() === p.email.toLowerCase());
+               if (idx > -1) {
+                 merged[idx] = { ...merged[idx], ...p };
+               } else {
+                 merged.push({ ...p, role: p.role || UserRole.CHILD });
+               }
+             });
+             return merged;
            });
-           setUsers(merged);
         }
 
-        // Fetch Tasks - Verrijk met database data indien aanwezig
+        // 2. Taken
         const { data: dbTasks } = await supabase.from('tasks').select('*');
         if (dbTasks && dbTasks.length > 0) {
            const mappedTasks = dbTasks.map(t => ({
@@ -375,9 +356,9 @@ const App = () => {
            setTasks(mappedTasks);
         }
         
-        // Fetch Completions
+        // 3. Voltooiingen
         const { data: dbCompletions } = await supabase.from('completions').select('*');
-        if (dbCompletions) {
+        if (dbCompletions && dbCompletions.length > 0) {
            setCompletions(dbCompletions.map(c => ({...c, taskId: c.task_id})));
         }
       } catch (err) {
@@ -388,24 +369,12 @@ const App = () => {
     };
 
     fetchData();
-    const saved = localStorage.getItem('session');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      const exists = users.find(u => u.email.toLowerCase() === parsed.email.toLowerCase());
-      if (exists) {
-        setCurrentUser(exists);
-        setViewMode(exists.role === UserRole.ADMIN ? 'manage' : 'daily');
-      } else {
-        localStorage.removeItem('session');
-      }
-    }
   }, []);
 
   const handleLogin = (email, pass) => {
     const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && String(u.password) === String(pass));
     if (user) {
       setCurrentUser(user);
-      localStorage.setItem('session', JSON.stringify(user));
       setViewMode(user.role === UserRole.ADMIN ? 'manage' : 'daily');
       return true;
     }
@@ -414,7 +383,6 @@ const App = () => {
 
   const handleLogout = () => {
     setCurrentUser(null);
-    localStorage.removeItem('session');
   };
 
   const onAddUser = async (userData) => {
@@ -423,7 +391,8 @@ const App = () => {
       id: Math.random().toString(36).substr(2, 9),
       avatar: userData.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.name}`
     };
-    setUsers(prev => [...prev, newUser]);
+    
+    // Direct naar DB
     try {
       await supabase.from('profiles').insert([{ 
         id: newUser.id,
@@ -433,19 +402,13 @@ const App = () => {
         role: newUser.role,
         avatar: newUser.avatar 
       }]);
+      // Update lokaal na succes
+      setUsers(prev => [...prev, newUser]);
     } catch (e) { console.error("Profile sync failed:", e); }
   };
 
   const onUpdateUser = async (updatedUser) => {
     const finalAvatar = updatedUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${updatedUser.name}`;
-    setUsers(prev => prev.map(u => u.id === updatedUser.id ? { ...updatedUser, avatar: finalAvatar } : u));
-    
-    if (currentUser?.id === updatedUser.id) {
-       const sessionUser = { ...updatedUser, avatar: finalAvatar };
-       setCurrentUser(sessionUser);
-       localStorage.setItem('session', JSON.stringify(sessionUser));
-    }
-    
     try {
       await supabase.from('profiles').update({ 
         name: updatedUser.name, 
@@ -454,32 +417,36 @@ const App = () => {
         role: updatedUser.role,
         avatar: finalAvatar
       }).eq('id', updatedUser.id);
+      
+      setUsers(prev => prev.map(u => u.id === updatedUser.id ? { ...updatedUser, avatar: finalAvatar } : u));
+      if (currentUser?.id === updatedUser.id) {
+         setCurrentUser({ ...updatedUser, avatar: finalAvatar });
+      }
     } catch (e) { console.error("Profile update failed:", e); }
   };
 
   const onDeleteUser = async (id) => {
-    if (window.confirm('Definitief verwijderen?')) {
-      setUsers(prev => prev.filter(u => u.id !== id));
+    if (window.confirm('Definitief verwijderen uit cloud?')) {
       try {
         await supabase.from('profiles').delete().eq('id', id);
+        setUsers(prev => prev.filter(u => u.id !== id));
       } catch (e) { console.error("Profile deletion failed:", e); }
     }
   };
 
   const addTask = async (newTask) => {
     const task = { 
-      ...newTask, 
       id: Math.random().toString(36).substr(2, 9), 
+      title: newTask.title,
+      description: newTask.description,
+      frequency: newTask.frequency,
       createdAt: new Date().toISOString(), 
       startDate: formatDateISO(new Date()), 
       assignedTo: 'team-all' 
     };
     
-    // Update lokale staat direct voor responsiviteit
-    setTasks(prev => [task, ...prev]);
-    
     try {
-      await supabase.from('tasks').insert([{ 
+      const { error } = await supabase.from('tasks').insert([{ 
         id: task.id,
         title: task.title, 
         description: task.description, 
@@ -487,13 +454,19 @@ const App = () => {
         frequency: task.frequency, 
         start_date: task.startDate 
       }]);
+      
+      if (!error) {
+        setTasks(prev => [task, ...prev]);
+      } else {
+        console.error("Cloud insert error:", error);
+      }
     } catch (e) { console.error("Task creation failed:", e); }
   };
 
   const removeTask = async (id) => {
-    setTasks(prev => prev.filter(t => t.id !== id));
     try {
       await supabase.from('tasks').delete().eq('id', id);
+      setTasks(prev => prev.filter(t => t.id !== id));
     } catch (e) { console.error("Task deletion failed:", e); }
   };
 
@@ -501,29 +474,27 @@ const App = () => {
     if (!currentUser) return;
     const existing = completions.find(c => c.taskId === taskId && c.completedAt === date);
     
-    if (existing) {
-      setCompletions(prev => prev.filter(c => c.id !== existing.id));
-      try {
+    try {
+      if (existing) {
         await supabase.from('completions').delete().eq('id', existing.id);
-      } catch (e) { console.error("Completion removal failed:", e); }
-    } else {
-      const completion = { id: Math.random().toString(36).substr(2, 9), taskId, completedAt: date, userId: currentUser.id };
-      setCompletions(prev => [...prev, completion]);
-      try {
+        setCompletions(prev => prev.filter(c => c.id !== existing.id));
+      } else {
+        const newId = Math.random().toString(36).substr(2, 9);
         await supabase.from('completions').insert([{ 
-          id: completion.id,
+          id: newId,
           task_id: taskId, 
           completed_at: date, 
           user_id: currentUser.id 
         }]);
-      } catch (e) { console.error("Completion sync failed:", e); }
-    }
+        setCompletions(prev => [...prev, { id: newId, taskId, completedAt: date, userId: currentUser.id }]);
+      }
+    } catch (e) { console.error("Completion sync failed:", e); }
   };
 
-  // We tonen alleen de loader als de app voor het eerst opstart en er GEEN lokale data is
-  if (isLoading && tasks.length === 0) return html`
+  if (isLoading) return html`
     <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] flex-col gap-8">
       <div className="w-16 h-16 border-[6px] border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+      <p className="text-slate-400 font-black uppercase tracking-widest text-xs animate-pulse">Syncen met cloud...</p>
     </div>
   `;
 
