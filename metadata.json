@@ -1,0 +1,8 @@
+{
+  "name": "TaskPulse Pro",
+  "description": "A sophisticated team task management application with recurring task scheduling, daily/weekly overviews, and AI-powered task generation.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
