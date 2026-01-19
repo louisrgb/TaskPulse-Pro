@@ -1,9 +1,9 @@
 
 export const TaskFrequency = {
-  ONCE: 'Once',
-  DAILY: 'Daily',
-  WEEKLY: 'Weekly',
-  MONTHLY: 'Monthly'
+  ONCE: 'Eenmalig',
+  DAILY: 'Dagelijks',
+  WEEKLY: 'Wekelijks',
+  MONTHLY: 'Maandelijks'
 };
 
 export const UserRole = {

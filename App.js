@@ -225,12 +225,21 @@ const AdminDashboard = ({ tasks, users, onAddTask, onDeleteTask, onAddUser, onUp
               <button onClick=${() => setIsAddingTask(false)} className="p-3 bg-slate-50 text-slate-400 hover:text-slate-600 rounded-full transition-all"><${ICONS.XMark} className="w-6 h-6"/></button>
             </div>
             <form onSubmit=${(e) => { e.preventDefault(); onAddTask(formData); setIsAddingTask(false); setFormData({title:'', description:'', frequency:TaskFrequency.DAILY}); }} className="space-y-6">
-              <input type="text" placeholder="Titel van de taak" className="w-full px-8 py-5 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-4 focus:ring-indigo-50" value=${formData.title} onInput=${e => setFormData({...formData, title: e.target.value})} required />
-              <textarea placeholder="Korte omschrijving..." className="w-full px-8 py-5 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-4 focus:ring-indigo-50 min-h-[120px]" value=${formData.description} onInput=${e => setFormData({...formData, description: e.target.value})} />
-              <select className="w-full px-8 py-5 rounded-2xl border border-slate-100 bg-slate-50 outline-none font-bold" value=${formData.frequency} onChange=${e => setFormData({...formData, frequency: e.target.value})}>
-                ${Object.values(TaskFrequency).map(f => html`<option key=${f} value=${f}>${f}</option>`)}
-              </select>
-              <button type="submit" className="w-full bg-indigo-600 text-white font-black py-6 rounded-[2rem] shadow-xl mt-6 hover:bg-indigo-700 transition-all">Direct Publiceren</button>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Titel</label>
+                <input type="text" placeholder="Bijv. Afwas doen" className="w-full px-8 py-5 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-4 focus:ring-indigo-50" value=${formData.title} onInput=${e => setFormData({...formData, title: e.target.value})} required />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Omschrijving</label>
+                <textarea placeholder="Korte omschrijving..." className="w-full px-8 py-5 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-4 focus:ring-indigo-50 min-h-[120px]" value=${formData.description} onInput=${e => setFormData({...formData, description: e.target.value})} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Herhaling</label>
+                <select className="w-full px-8 py-5 rounded-2xl border border-slate-100 bg-slate-50 outline-none font-bold appearance-none" value=${formData.frequency} onChange=${e => setFormData({...formData, frequency: e.target.value})}>
+                  ${Object.values(TaskFrequency).map(f => html`<option key=${f} value=${f}>${f}</option>`)}
+                </select>
+              </div>
+              <button type="submit" className="w-full bg-indigo-600 text-white font-black py-6 rounded-[2rem] shadow-xl mt-6 hover:bg-indigo-700 transition-all">Taak Aanmaken</button>
             </form>
           </div>
         </div>
@@ -307,25 +316,34 @@ const UserView = ({ tasks, selectedDate, setSelectedDate, onToggle, isCompleted,
 
 const App = () => {
   const [currentUser, setCurrentUser] = useState(null);
+  
+  // Initialiseer staten DIRECT uit localStorage voor maximale persistentie
   const [users, setUsers] = useState(() => {
     const saved = localStorage.getItem('tp_users');
     let parsed = saved ? JSON.parse(saved) : INITIAL_USERS;
-    INITIAL_USERS.forEach(iu => {
-      if (!parsed.find(u => u.email.toLowerCase() === iu.email.toLowerCase())) {
-        parsed.push(iu);
-      }
-    });
     return parsed;
   });
-  const [tasks, setTasks] = useState([]);
-  const [completions, setCompletions] = useState([]);
+
+  const [tasks, setTasks] = useState(() => {
+    const saved = localStorage.getItem('tp_tasks');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [completions, setCompletions] = useState(() => {
+    const saved = localStorage.getItem('tp_completions');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [selectedDate, setSelectedDate] = useState(formatDateISO(new Date()));
   const [viewMode, setViewMode] = useState('daily');
   const [isLoading, setIsLoading] = useState(true);
   
+  // Effect om lokale wijzigingen op te slaan
   useEffect(() => {
     localStorage.setItem('tp_users', JSON.stringify(users));
-  }, [users]);
+    localStorage.setItem('tp_tasks', JSON.stringify(tasks));
+    localStorage.setItem('tp_completions', JSON.stringify(completions));
+  }, [users, tasks, completions]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -345,10 +363,16 @@ const App = () => {
            setUsers(merged);
         }
 
-        // Fetch Tasks
+        // Fetch Tasks - Verrijk met database data indien aanwezig
         const { data: dbTasks } = await supabase.from('tasks').select('*');
         if (dbTasks && dbTasks.length > 0) {
-           setTasks(dbTasks.map(t => ({...t, assignedTo: t.assigned_to, frequency: t.frequency})));
+           const mappedTasks = dbTasks.map(t => ({
+             ...t, 
+             assignedTo: t.assigned_to, 
+             frequency: t.frequency,
+             startDate: t.start_date || t.startDate
+           }));
+           setTasks(mappedTasks);
         }
         
         // Fetch Completions
@@ -357,7 +381,7 @@ const App = () => {
            setCompletions(dbCompletions.map(c => ({...c, taskId: c.task_id})));
         }
       } catch (err) {
-        console.error("Sync error:", err);
+        console.error("Cloud sync error:", err);
       } finally {
         setIsLoading(false);
       }
@@ -376,13 +400,6 @@ const App = () => {
       }
     }
   }, []);
-
-  useEffect(() => {
-    if (!isLoading) {
-      localStorage.setItem('tp_tasks', JSON.stringify(tasks));
-      localStorage.setItem('tp_completions', JSON.stringify(completions));
-    }
-  }, [tasks, completions, isLoading]);
 
   const handleLogin = (email, pass) => {
     const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && String(u.password) === String(pass));
@@ -416,7 +433,7 @@ const App = () => {
         role: newUser.role,
         avatar: newUser.avatar 
       }]);
-    } catch (e) { console.error("Sync failed:", e); }
+    } catch (e) { console.error("Profile sync failed:", e); }
   };
 
   const onUpdateUser = async (updatedUser) => {
@@ -437,7 +454,7 @@ const App = () => {
         role: updatedUser.role,
         avatar: finalAvatar
       }).eq('id', updatedUser.id);
-    } catch (e) { console.error("Sync failed:", e); }
+    } catch (e) { console.error("Profile update failed:", e); }
   };
 
   const onDeleteUser = async (id) => {
@@ -445,13 +462,22 @@ const App = () => {
       setUsers(prev => prev.filter(u => u.id !== id));
       try {
         await supabase.from('profiles').delete().eq('id', id);
-      } catch (e) { console.error("Sync failed:", e); }
+      } catch (e) { console.error("Profile deletion failed:", e); }
     }
   };
 
   const addTask = async (newTask) => {
-    const task = { ...newTask, id: Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString(), startDate: formatDateISO(new Date()), assignedTo: 'team-all' };
+    const task = { 
+      ...newTask, 
+      id: Math.random().toString(36).substr(2, 9), 
+      createdAt: new Date().toISOString(), 
+      startDate: formatDateISO(new Date()), 
+      assignedTo: 'team-all' 
+    };
+    
+    // Update lokale staat direct voor responsiviteit
     setTasks(prev => [task, ...prev]);
+    
     try {
       await supabase.from('tasks').insert([{ 
         id: task.id,
@@ -461,24 +487,25 @@ const App = () => {
         frequency: task.frequency, 
         start_date: task.startDate 
       }]);
-    } catch (e) { console.error("Sync failed:", e); }
+    } catch (e) { console.error("Task creation failed:", e); }
   };
 
   const removeTask = async (id) => {
     setTasks(prev => prev.filter(t => t.id !== id));
     try {
       await supabase.from('tasks').delete().eq('id', id);
-    } catch (e) { console.error("Sync failed:", e); }
+    } catch (e) { console.error("Task deletion failed:", e); }
   };
 
   const toggleTask = async (taskId, date) => {
     if (!currentUser) return;
     const existing = completions.find(c => c.taskId === taskId && c.completedAt === date);
+    
     if (existing) {
       setCompletions(prev => prev.filter(c => c.id !== existing.id));
       try {
         await supabase.from('completions').delete().eq('id', existing.id);
-      } catch (e) { console.error("Sync failed:", e); }
+      } catch (e) { console.error("Completion removal failed:", e); }
     } else {
       const completion = { id: Math.random().toString(36).substr(2, 9), taskId, completedAt: date, userId: currentUser.id };
       setCompletions(prev => [...prev, completion]);
@@ -489,11 +516,12 @@ const App = () => {
           completed_at: date, 
           user_id: currentUser.id 
         }]);
-      } catch (e) { console.error("Sync failed:", e); }
+      } catch (e) { console.error("Completion sync failed:", e); }
     }
   };
 
-  if (isLoading) return html`
+  // We tonen alleen de loader als de app voor het eerst opstart en er GEEN lokale data is
+  if (isLoading && tasks.length === 0) return html`
     <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] flex-col gap-8">
       <div className="w-16 h-16 border-[6px] border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
     </div>
