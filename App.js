@@ -31,7 +31,7 @@ const LoginView = ({ onLogin }) => {
           <div className="w-20 h-20 bg-indigo-600 rounded-[2rem] flex items-center justify-center text-white font-bold text-4xl shadow-2xl shadow-indigo-100">T</div>
           <div>
             <h2 className="text-3xl font-black text-slate-900 tracking-tight">TaskPulse Pro</h2>
-            <p className="text-slate-500 font-medium mt-1 uppercase text-[10px] tracking-[0.2em]">Systeem Toegang</p>
+            <p className="text-slate-500 font-medium mt-1 uppercase text-[10px] tracking-[0.2em]">Beveiligde Toegang</p>
           </div>
         </div>
         <form onSubmit=${handleSubmit} className="space-y-4">
@@ -43,7 +43,7 @@ const LoginView = ({ onLogin }) => {
             <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Wachtwoord</label>
             <input type="password" placeholder="••••••••" className="w-full px-8 py-5 rounded-[2rem] border border-slate-100 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-indigo-50 outline-none transition-all" value=${password} onInput=${e => setPassword(e.target.value)} required />
           </div>
-          ${error && html`<p className="text-red-500 text-xs font-bold text-center bg-red-50 py-3 rounded-2xl">Onjuiste gegevens.</p>`}
+          ${error && html`<p className="text-red-500 text-xs font-bold text-center bg-red-50 py-3 rounded-2xl">Ongeldige login.</p>`}
           <button type="submit" className="w-full bg-indigo-600 text-white font-black py-5 rounded-[2rem] shadow-xl shadow-indigo-100 hover:bg-indigo-700 active:scale-[0.98] transition-all text-lg mt-4">Inloggen</button>
         </form>
       </div>
@@ -54,17 +54,17 @@ const LoginView = ({ onLogin }) => {
 const UserManagement = ({ users, onAddUser, onUpdateUser, onDeleteUser }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [formData, setFormData] = useState({ name: '', email: '', password: '123', role: UserRole.CHILD });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '123', role: UserRole.CHILD, avatar: '' });
 
   const openAddModal = () => {
     setEditingUser(null);
-    setFormData({ name: '', email: '', password: '123', role: UserRole.CHILD });
+    setFormData({ name: '', email: '', password: '123', role: UserRole.CHILD, avatar: '' });
     setIsModalOpen(true);
   };
 
   const openEditModal = (user) => {
     setEditingUser(user);
-    setFormData({ name: user.name, email: user.email, password: user.password || '123', role: user.role });
+    setFormData({ name: user.name, email: user.email, password: user.password || '123', role: user.role, avatar: user.avatar || '' });
     setIsModalOpen(true);
   };
 
@@ -82,11 +82,11 @@ const UserManagement = ({ users, onAddUser, onUpdateUser, onDeleteUser }) => {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 gap-6">
         <div>
-          <h3 className="text-2xl font-black text-slate-800 tracking-tight">Gebruikersbeheer</h3>
-          <p className="text-slate-400 text-sm font-medium">Beheer alle accounts en toegangsrechten.</p>
+          <h3 className="text-2xl font-black text-slate-800 tracking-tight">Leden & Profielen</h3>
+          <p className="text-slate-400 text-sm font-medium">Beheer gebruikers en profielfoto's.</p>
         </div>
         <button onClick=${openAddModal} className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black shadow-lg shadow-emerald-100 hover:bg-emerald-600 active:scale-95 transition-all flex items-center justify-center gap-3">
-          <${ICONS.Plus} className="w-6 h-6" /> Nieuwe Gebruiker
+          <${ICONS.Plus} className="w-6 h-6" /> Nieuw Lid
         </button>
       </div>
 
@@ -124,13 +124,17 @@ const UserManagement = ({ users, onAddUser, onUpdateUser, onDeleteUser }) => {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[999] flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl p-10 animate-in zoom-in duration-200">
             <div className="flex items-center justify-between mb-8">
-              <h3 className="text-2xl font-black text-slate-800">${editingUser ? 'Account Aanpassen' : 'Nieuw Account'}</h3>
+              <h3 className="text-2xl font-black text-slate-800">${editingUser ? 'Lid Bewerken' : 'Nieuw Lid Toevoegen'}</h3>
               <button onClick=${() => setIsModalOpen(false)} className="p-3 bg-slate-50 text-slate-400 hover:text-slate-600 rounded-full transition-all"><${ICONS.XMark} className="w-6 h-6"/></button>
             </div>
             <form onSubmit=${handleSubmit} className="space-y-4">
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Naam</label>
                 <input type="text" className="w-full px-8 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-4 focus:ring-indigo-50" value=${formData.name} onInput=${e => setFormData({...formData, name: e.target.value})} required />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Profielfoto URL</label>
+                <input type="text" placeholder="https://..." className="w-full px-8 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-4 focus:ring-indigo-50" value=${formData.avatar} onInput=${e => setFormData({...formData, avatar: e.target.value})} />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-4">E-mail</label>
@@ -142,13 +146,13 @@ const UserManagement = ({ users, onAddUser, onUpdateUser, onDeleteUser }) => {
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Rol</label>
-                <select className="w-full px-8 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none font-bold" value=${formData.role} onChange=${e => setFormData({...formData, role: e.target.value})}>
+                <select className="w-full px-8 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none font-bold appearance-none" value=${formData.role} onChange=${e => setFormData({...formData, role: e.target.value})}>
                   <option value=${UserRole.CHILD}>Kind / Gebruiker</option>
                   <option value=${UserRole.ADMIN}>Admin</option>
                 </select>
               </div>
               <button type="submit" className="w-full bg-indigo-600 text-white font-black py-5 rounded-[2rem] shadow-xl shadow-indigo-100 mt-6 hover:bg-indigo-700 active:scale-95 transition-all">
-                ${editingUser ? 'Opslaan' : 'Toevoegen'}
+                ${editingUser ? 'Opslaan & Synchroniseren' : 'Toevoegen aan Team'}
               </button>
             </form>
           </div>
@@ -217,16 +221,16 @@ const AdminDashboard = ({ tasks, users, onAddTask, onDeleteTask, onAddUser, onUp
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[999] flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl p-10 animate-in zoom-in duration-200">
             <div className="flex items-center justify-between mb-10">
-              <h3 className="text-2xl font-black text-slate-800">Taak Toevoegen</h3>
+              <h3 className="text-2xl font-black text-slate-800">Nieuwe Taak</h3>
               <button onClick=${() => setIsAddingTask(false)} className="p-3 bg-slate-50 text-slate-400 hover:text-slate-600 rounded-full transition-all"><${ICONS.XMark} className="w-6 h-6"/></button>
             </div>
             <form onSubmit=${(e) => { e.preventDefault(); onAddTask(formData); setIsAddingTask(false); setFormData({title:'', description:'', frequency:TaskFrequency.DAILY}); }} className="space-y-6">
               <input type="text" placeholder="Titel van de taak" className="w-full px-8 py-5 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-4 focus:ring-indigo-50" value=${formData.title} onInput=${e => setFormData({...formData, title: e.target.value})} required />
-              <textarea placeholder="Beschrijving..." className="w-full px-8 py-5 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-4 focus:ring-indigo-50 min-h-[120px]" value=${formData.description} onInput=${e => setFormData({...formData, description: e.target.value})} />
+              <textarea placeholder="Korte beschrijving..." className="w-full px-8 py-5 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-4 focus:ring-indigo-50 min-h-[120px]" value=${formData.description} onInput=${e => setFormData({...formData, description: e.target.value})} />
               <select className="w-full px-8 py-5 rounded-2xl border border-slate-100 bg-slate-50 outline-none font-bold" value=${formData.frequency} onChange=${e => setFormData({...formData, frequency: e.target.value})}>
                 ${Object.values(TaskFrequency).map(f => html`<option key=${f} value=${f}>${f}</option>`)}
               </select>
-              <button type="submit" className="w-full bg-indigo-600 text-white font-black py-6 rounded-[2rem] shadow-xl mt-6 hover:bg-indigo-700 transition-all">Publiceren</button>
+              <button type="submit" className="w-full bg-indigo-600 text-white font-black py-6 rounded-[2rem] shadow-xl mt-6 hover:bg-indigo-700 transition-all">Direct Publiceren</button>
             </form>
           </div>
         </div>
@@ -272,7 +276,7 @@ const UserView = ({ tasks, selectedDate, setSelectedDate, onToggle, isCompleted,
           </div>
         `) : html`
           <div className="bg-white rounded-[3rem] p-24 text-center border-4 border-dashed border-slate-50">
-            <p className="text-slate-400 font-black text-xl">Lekker bezig! Geen taken meer vandaag. 🎉</p>
+            <p className="text-slate-400 font-black text-xl">Lekker bezig! Alles is gedaan. 🎉</p>
           </div>
         `}
       </div>
@@ -285,7 +289,6 @@ const App = () => {
   const [users, setUsers] = useState(() => {
     const saved = localStorage.getItem('tp_users');
     let parsed = saved ? JSON.parse(saved) : INITIAL_USERS;
-    // Altijd zorgen dat Louis Chauvet admin is bij de initialisatie
     INITIAL_USERS.forEach(iu => {
       if (!parsed.find(u => u.email.toLowerCase() === iu.email.toLowerCase())) {
         parsed.push(iu);
@@ -306,20 +309,31 @@ const App = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Fetch Profiles (Users)
+        const { data: dbProfiles } = await supabase.from('profiles').select('*');
+        if (dbProfiles && dbProfiles.length > 0) {
+           const merged = [...INITIAL_USERS];
+           dbProfiles.forEach(p => {
+             const existingIdx = merged.findIndex(m => m.email.toLowerCase() === p.email.toLowerCase());
+             if (existingIdx > -1) {
+               merged[existingIdx] = { ...merged[existingIdx], ...p };
+             } else {
+               merged.push({ ...p, role: p.role || UserRole.CHILD });
+             }
+           });
+           setUsers(merged);
+        }
+
+        // Fetch Tasks
         const { data: dbTasks } = await supabase.from('tasks').select('*');
         if (dbTasks && dbTasks.length > 0) {
            setTasks(dbTasks.map(t => ({...t, assignedTo: t.assigned_to, frequency: t.frequency})));
-        } else {
-           const savedTasks = localStorage.getItem('tp_tasks');
-           if (savedTasks) setTasks(JSON.parse(savedTasks));
         }
         
+        // Fetch Completions
         const { data: dbCompletions } = await supabase.from('completions').select('*');
         if (dbCompletions) {
            setCompletions(dbCompletions.map(c => ({...c, taskId: c.task_id})));
-        } else {
-           const savedComps = localStorage.getItem('tp_completions');
-           if (savedComps) setCompletions(JSON.parse(savedComps));
         }
       } catch (err) {
         console.error("Sync error:", err);
@@ -365,36 +379,75 @@ const App = () => {
     localStorage.removeItem('session');
   };
 
-  const onAddUser = (userData) => {
+  const onAddUser = async (userData) => {
     const newUser = {
       ...userData,
       id: Math.random().toString(36).substr(2, 9),
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.name}`
+      avatar: userData.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.name}`
     };
     setUsers(prev => [...prev, newUser]);
+    try {
+      await supabase.from('profiles').insert([{ 
+        id: newUser.id,
+        name: newUser.name, 
+        email: newUser.email, 
+        password: newUser.password, 
+        role: newUser.role,
+        avatar: newUser.avatar 
+      }]);
+    } catch (e) { console.error("Sync Error:", e); }
   };
 
-  const onUpdateUser = (updatedUser) => {
-    setUsers(prev => prev.map(u => u.id === updatedUser.id ? { ...updatedUser, avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${updatedUser.name}` } : u));
+  const onUpdateUser = async (updatedUser) => {
+    const finalAvatar = updatedUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${updatedUser.name}`;
+    setUsers(prev => prev.map(u => u.id === updatedUser.id ? { ...updatedUser, avatar: finalAvatar } : u));
+    
     if (currentUser?.id === updatedUser.id) {
-       setCurrentUser(updatedUser);
-       localStorage.setItem('session', JSON.stringify(updatedUser));
+       const sessionUser = { ...updatedUser, avatar: finalAvatar };
+       setCurrentUser(sessionUser);
+       localStorage.setItem('session', JSON.stringify(sessionUser));
     }
+    
+    try {
+      await supabase.from('profiles').update({ 
+        name: updatedUser.name, 
+        email: updatedUser.email, 
+        password: updatedUser.password, 
+        role: updatedUser.role,
+        avatar: finalAvatar
+      }).eq('id', updatedUser.id);
+    } catch (e) { console.error("Sync Error:", e); }
   };
 
-  const onDeleteUser = (id) => {
-    if (window.confirm('Gebruiker verwijderen?')) {
+  const onDeleteUser = async (id) => {
+    if (window.confirm('Gebruiker definitief verwijderen?')) {
       setUsers(prev => prev.filter(u => u.id !== id));
+      try {
+        await supabase.from('profiles').delete().eq('id', id);
+      } catch (e) { console.error("Sync Error:", e); }
     }
   };
 
   const addTask = async (newTask) => {
     const task = { ...newTask, id: Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString(), startDate: formatDateISO(new Date()), assignedTo: 'team-all' };
     setTasks(prev => [task, ...prev]);
+    try {
+      await supabase.from('tasks').insert([{ 
+        id: task.id,
+        title: task.title, 
+        description: task.description, 
+        assigned_to: task.assignedTo, 
+        frequency: task.frequency, 
+        start_date: task.startDate 
+      }]);
+    } catch (e) { console.error("Sync Error:", e); }
   };
 
   const removeTask = async (id) => {
     setTasks(prev => prev.filter(t => t.id !== id));
+    try {
+      await supabase.from('tasks').delete().eq('id', id);
+    } catch (e) { console.error("Sync Error:", e); }
   };
 
   const toggleTask = async (taskId, date) => {
@@ -402,9 +455,20 @@ const App = () => {
     const existing = completions.find(c => c.taskId === taskId && c.completedAt === date);
     if (existing) {
       setCompletions(prev => prev.filter(c => c.id !== existing.id));
+      try {
+        await supabase.from('completions').delete().eq('id', existing.id);
+      } catch (e) { console.error("Sync Error:", e); }
     } else {
       const completion = { id: Math.random().toString(36).substr(2, 9), taskId, completedAt: date, userId: currentUser.id };
       setCompletions(prev => [...prev, completion]);
+      try {
+        await supabase.from('completions').insert([{ 
+          id: completion.id,
+          task_id: taskId, 
+          completed_at: date, 
+          user_id: currentUser.id 
+        }]);
+      } catch (e) { console.error("Sync Error:", e); }
     }
   };
 
