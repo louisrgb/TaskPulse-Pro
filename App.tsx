@@ -46,6 +46,7 @@ const LoginView: React.FC<{ onLogin: (email: string, pass: string) => boolean }>
             Inloggen
           </button>
         </form>
+        <p className="mt-6 text-[10px] text-center text-slate-400 font-medium">Log in met de gegevens die je in de SQL editor hebt ingevoerd.</p>
       </div>
     </div>
   );
@@ -358,43 +359,70 @@ const App: React.FC = () => {
   const [quote, setQuote] = useState<string>('');
   const [notifications, setNotifications] = useState<{id: string, message: string}[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
+      setFetchError(null);
+      
+      // Veiligheidsmechanisme: als het langer dan 5 seconden duurt, toon dan in ieder geval de login
+      const timeout = setTimeout(() => {
+        setIsLoading(false);
+        setFetchError("Connectie duurt lang, probeer alvast in te loggen.");
+      }, 5000);
+
       try {
-        const { data: profiles } = await supabase.from('profiles').select('*');
+        console.log("Start laden gegevens uit Supabase...");
+        
+        // 1. Haal profielen op
+        const { data: profiles, error: pError } = await supabase.from('profiles').select('*');
+        if (pError) console.error("Fout bij profielen:", pError);
         if (profiles) {
           const mappedUsers: User[] = profiles.map(p => ({
             id: p.id, name: p.name, email: p.email, avatar: p.avatar, role: p.role as UserRole, password: p.password
           }));
-          setUsers([...mappedUsers, INITIAL_USERS[0]]);
+          setUsers([...mappedUsers, ...INITIAL_USERS]);
+          console.log("Profielen geladen:", mappedUsers.length);
         }
 
-        const { data: dbTasks } = await supabase.from('tasks').select('*');
+        // 2. Haal taken op
+        const { data: dbTasks, error: tError } = await supabase.from('tasks').select('*');
+        if (tError) console.error("Fout bij taken:", tError);
         if (dbTasks) {
           setTasks(dbTasks.map(t => ({
             id: t.id, title: t.title, description: t.description, assignedTo: t.assigned_to, frequency: t.frequency as TaskFrequency, createdAt: t.created_at, startDate: t.start_date, scheduledTime: t.scheduled_time
           })));
+          console.log("Taken geladen:", dbTasks.length);
         }
 
-        const { data: dbCompletions } = await supabase.from('completions').select('*');
+        // 3. Haal voltooide taken op
+        const { data: dbCompletions, error: cError } = await supabase.from('completions').select('*');
+        if (cError) console.error("Fout bij completions:", cError);
         if (dbCompletions) {
           setCompletions(dbCompletions.map(c => ({
             id: c.id, taskId: c.task_id, completedAt: c.completed_at, userId: c.user_id
           })));
+          console.log("Completions geladen:", dbCompletions.length);
         }
       } catch (err) {
-        console.error("Fout bij laden data uit Supabase:", err);
+        console.error("Kritieke fout bij laden data:", err);
+        setFetchError("Kon geen verbinding maken met de database.");
       } finally {
+        clearTimeout(timeout);
         setIsLoading(false);
       }
     };
 
     fetchData();
     geminiService.getProductivityQuote().then(setQuote);
-    const savedSession = localStorage.getItem('session');
-    if (savedSession) setCurrentUser(JSON.parse(savedSession));
+    
+    try {
+      const savedSession = localStorage.getItem('session');
+      if (savedSession) setCurrentUser(JSON.parse(savedSession));
+    } catch(e) {
+      console.warn("Ongeldige sessie in localStorage");
+    }
   }, []);
 
   const handleLogin = (email: string, pass: string) => {
@@ -468,18 +496,22 @@ const App: React.FC = () => {
     return tasks.filter(t => t.assignedTo === currentUser.id || t.assignedTo === '3');
   }, [tasks, currentUser]);
 
-  if (!currentUser) return <LoginView onLogin={handleLogin} />;
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-4 p-8 text-center">
           <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-slate-500 font-bold animate-pulse">Laden uit Cloud...</p>
+          <div>
+            <p className="text-slate-800 font-bold">Gegevens ophalen...</p>
+            <p className="text-slate-500 text-sm mt-1 italic">Zorg dat RLS uitstaat in je Supabase Dashboard.</p>
+          </div>
+          {fetchError && <p className="text-amber-600 text-xs font-medium mt-4 bg-amber-50 px-4 py-2 rounded-lg border border-amber-100">{fetchError}</p>}
         </div>
       </div>
     );
   }
+
+  if (!currentUser) return <LoginView onLogin={handleLogin} />;
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-[#f8fafc]">
