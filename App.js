@@ -232,7 +232,7 @@ const AdminDashboard = ({ tasks, users, onAddTask, onDeleteTask }) => {
            <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-8 animate-in zoom-in duration-200">
              <div className="flex items-center justify-between mb-8">
                <h3 className="text-xl font-black text-slate-800">Taak Toevoegen</h3>
-               <button onClick=${() => setIsAdding(false)} className="p-2 text-slate-400"><${ICONS.XMark} className="w-6 h-6"/></button>
+               <button onClick=${() => setIsAdding(false)} className="p-2 text-slate-400 hover:bg-slate-50 rounded-full transition-all"><${ICONS.XMark} className="w-6 h-6"/></button>
              </div>
              <form onSubmit=${(e) => { 
                e.preventDefault(); 
@@ -242,11 +242,11 @@ const AdminDashboard = ({ tasks, users, onAddTask, onDeleteTask }) => {
              }} className="space-y-4">
                <div className="space-y-1">
                  <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Titel</label>
-                 <input type="text" className="w-full px-6 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none" value=${formData.title} onInput=${e => setFormData({...formData, title: e.target.value})} required />
+                 <input type="text" className="w-full px-6 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all" value=${formData.title} onInput=${e => setFormData({...formData, title: e.target.value})} required />
                </div>
                <div className="space-y-1">
                  <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Omschrijving</label>
-                 <textarea className="w-full px-6 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none" value=${formData.description} onInput=${e => setFormData({...formData, description: e.target.value})} />
+                 <textarea className="w-full px-6 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all min-h-[100px]" value=${formData.description} onInput=${e => setFormData({...formData, description: e.target.value})} />
                </div>
                <div className="grid grid-cols-2 gap-4">
                  <div className="space-y-1">
@@ -262,7 +262,7 @@ const AdminDashboard = ({ tasks, users, onAddTask, onDeleteTask }) => {
                    </select>
                  </div>
                </div>
-               <button type="submit" className="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg mt-4">Opslaan</button>
+               <button type="submit" className="w-full bg-indigo-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 active:scale-[0.98] transition-all text-lg mt-4">Taak Opslaan</button>
              </form>
            </div>
          </div>
