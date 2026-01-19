@@ -59,7 +59,6 @@ const LoginView = ({ onLogin, syncError }) => {
 
 const UserView = ({ tasks, selectedDate, setSelectedDate, onToggle, isCompleted, currentUser }) => {
   const weekDays = useMemo(() => getDaysOfWeek(new Date(selectedDate)), [selectedDate]);
-  // Filter taken: alleen voor de huidige gebruiker of voor 'team-all'
   const activeTasks = tasks.filter(t => 
     isTaskVisibleOnDate(t, selectedDate) && 
     (t.assignedTo === currentUser.id || t.assignedTo === 'team-all')
@@ -131,6 +130,7 @@ const UserView = ({ tasks, selectedDate, setSelectedDate, onToggle, isCompleted,
 
 const AdminDashboard = ({ tasks, users, onAddTask, onDeleteTask }) => {
   const [isAdding, setIsAdding] = useState(false);
+  const [adminTab, setAdminTab] = useState('tasks'); // 'tasks' or 'users'
   const [formData, setFormData] = useState({ 
     title: '', 
     description: '', 
@@ -142,48 +142,90 @@ const AdminDashboard = ({ tasks, users, onAddTask, onDeleteTask }) => {
 
   return html`
     <div className="space-y-8 animate-in slide-in-from-bottom-4">
-       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <h2 className="text-3xl font-black text-slate-800">Beheer</h2>
-            <p className="text-slate-400 font-bold text-sm">Wijs taken toe aan specifieke personen.</p>
+            <h2 className="text-3xl font-black text-slate-800 tracking-tight">Beheer</h2>
+            <p className="text-slate-400 font-bold text-sm">Controleer taken en familieleden.</p>
           </div>
-          <button onClick=${() => setIsAdding(true)} className="bg-indigo-600 text-white px-6 py-4 rounded-2xl font-black shadow-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
-            <${ICONS.Plus} className="w-5 h-5" /> Nieuwe Taak
-          </button>
+          
+          <div className="flex bg-slate-100 p-1.5 rounded-2xl self-start">
+             <button onClick=${() => setAdminTab('tasks')} className=${`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${adminTab === 'tasks' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Taken</button>
+             <button onClick=${() => setAdminTab('users')} className=${`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${adminTab === 'users' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Leden</button>
+          </div>
        </div>
 
-       <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
-          <table className="w-full text-left">
-            <thead className="bg-slate-50 border-b border-slate-100">
-              <tr>
-                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Inhoud</th>
-                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Toegewezen aan</th>
-                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actie</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              ${tasks.map(t => html`
-                <tr key=${t.id} className="hover:bg-slate-50/50 transition-all">
-                  <td className="px-8 py-6">
-                    <p className="font-bold text-slate-800">${t.title}</p>
-                    <p className="text-xs text-slate-400">${t.frequency}</p>
-                  </td>
-                  <td className="px-8 py-6">
-                    <span className=${`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${t.assignedTo === 'team-all' ? 'bg-blue-50 text-blue-600' : 'bg-indigo-50 text-indigo-600'}`}>
-                      ${getUserName(t.assignedTo)}
-                    </span>
-                  </td>
-                  <td className="px-8 py-6 text-right">
-                    <button onClick=${() => onDeleteTask(t.id)} className="p-3 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all">
-                      <${ICONS.Trash} className="w-5 h-5" />
-                    </button>
-                  </td>
+       ${adminTab === 'tasks' ? html`
+         <div className="space-y-8">
+            <div className="flex justify-end">
+              <button onClick=${() => setIsAdding(true)} className="bg-indigo-600 text-white px-6 py-4 rounded-2xl font-black shadow-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 w-full md:w-auto">
+                <${ICONS.Plus} className="w-5 h-5" /> Nieuwe Taak
+              </button>
+            </div>
+
+            <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden overflow-x-auto">
+              <table className="w-full text-left min-w-[500px]">
+                <thead className="bg-slate-50 border-b border-slate-100">
+                  <tr>
+                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Inhoud</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Toegewezen aan</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actie</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  ${tasks.map(t => html`
+                    <tr key=${t.id} className="hover:bg-slate-50/50 transition-all">
+                      <td className="px-8 py-6">
+                        <p className="font-bold text-slate-800">${t.title}</p>
+                        <p className="text-xs text-slate-400">${t.frequency}</p>
+                      </td>
+                      <td className="px-8 py-6">
+                        <span className=${`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${t.assignedTo === 'team-all' ? 'bg-blue-50 text-blue-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                          ${getUserName(t.assignedTo)}
+                        </span>
+                      </td>
+                      <td className="px-8 py-6 text-right">
+                        <button onClick=${() => onDeleteTask(t.id)} className="p-3 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all">
+                          <${ICONS.Trash} className="w-5 h-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  `)}
+                </tbody>
+              </table>
+              ${tasks.length === 0 && html`<div className="p-20 text-center text-slate-300 font-bold">Geen taken gevonden.</div>`}
+            </div>
+         </div>
+       ` : html`
+         <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden overflow-x-auto">
+            <table className="w-full text-left min-w-[500px]">
+              <thead className="bg-slate-50 border-b border-slate-100">
+                <tr>
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Gebruiker</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">E-mail</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Rol</th>
                 </tr>
-              `)}
-            </tbody>
-          </table>
-          ${tasks.length === 0 && html`<div className="p-20 text-center text-slate-300 font-bold">Geen taken gevonden.</div>`}
-       </div>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                ${users.map(user => html`
+                  <tr key=${user.id} className="hover:bg-slate-50/50 transition-all">
+                    <td className="px-8 py-6 flex items-center gap-4">
+                      <img src=${user.avatar} className="w-10 h-10 rounded-full border border-slate-100 shadow-sm" />
+                      <p className="font-bold text-slate-800">${user.name}</p>
+                    </td>
+                    <td className="px-8 py-6">
+                      <p className="text-sm text-slate-500">${user.email}</p>
+                    </td>
+                    <td className="px-8 py-6">
+                      <span className=${`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${user.role === UserRole.ADMIN ? 'bg-purple-50 text-purple-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                        ${user.role}
+                      </span>
+                    </td>
+                  </tr>
+                `)}
+              </tbody>
+            </table>
+         </div>
+       `}
 
        ${isAdding && html`
          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[999] flex items-center justify-center p-4">
